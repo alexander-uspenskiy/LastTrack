@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { armorColorIndex, armorColorHex, speedFrac, posParts, carChip, CHIP_FALLBACK, GAUGE_MAX_KPH, feedLine, standings } from '../../src/ui/hud.js';
+import { armorColorIndex, armorColorHex, speedFrac, posParts, carChip, CHIP_FALLBACK, GAUGE_MAX_KPH, feedLine, standings, coracerFace } from '../../src/ui/hud.js';
 import { zoneColor, gaugeAngle, gearLabel } from '../../src/ui/dash.js';
 import { ordinal, fmtMoney, fmtTime, kph } from '../../src/ui/dom.js';
 
@@ -24,6 +24,16 @@ test('standings sorted by position without mutating the snapshot', () => {
   const snap = { cars: [{ id: 0, position: 3 }, { id: 1, position: 1 }, { id: 2, position: 2 }] };
   assert.deepEqual(standings(snap).map((c) => c.id), [1, 2, 0]);
   assert.equal(snap.cars[0].id, 0);
+});
+
+test('co-racer status face: finished > wrecked > burning > low armour > ok', () => {
+  assert.equal(coracerFace({ finished: true, wrecked: true, armor: 0, armorMax: 100 }), 'fin');
+  assert.equal(coracerFace({ wrecked: true, burning: true, armor: 0, armorMax: 100 }), 'dead');
+  assert.equal(coracerFace({ burning: true, armor: 10, armorMax: 100 }), 'burn');
+  assert.equal(coracerFace({ armor: 34, armorMax: 100 }), 'hurt');
+  assert.equal(coracerFace({ armor: 35, armorMax: 100 }), 'ok');
+  assert.equal(coracerFace({ armor: 80, armorMax: 100 }), 'ok');
+  assert.equal(coracerFace({ armor: 0, armorMax: 0 }), 'ok');
 });
 
 test('formatters', () => {
