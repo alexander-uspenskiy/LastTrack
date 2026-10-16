@@ -72,12 +72,12 @@ function wheelParts() {
 }
 
 function carbonKit() {
-  const parts = [];
-  const splitter = roundedBox(0.7, 0.03, 1.95, 0.012, 3); xf(splitter, { pos: [2.55, 0.2, 0] }); parts.push(splitter);
-  const noseLip = roundedBox(0.1, 0.06, 1.5, 0.02, 2); xf(noseLip, { pos: [2.78, 0.22, 0], rot: [0, 0, -0.2] }); parts.push(noseLip);
-  for (const sd of [1, -1]) { const intake = roundedBox(0.26, 0.1, 0.3, 0.03, 2); xf(intake, { pos: [2.4, 0.4, sd * 0.78], rot: [0, -sd * 0.5, 0] }); parts.push(intake); }
+  const parts = [], F = [], R = [];
+  const splitter = roundedBox(0.7, 0.03, 1.95, 0.012, 3); xf(splitter, { pos: [2.55, 0.2, 0] }); F.push(splitter);
+  const noseLip = roundedBox(0.1, 0.06, 1.5, 0.02, 2); xf(noseLip, { pos: [2.78, 0.22, 0], rot: [0, 0, -0.2] }); F.push(noseLip);
+  for (const sd of [1, -1]) { const intake = roundedBox(0.26, 0.1, 0.3, 0.03, 2); xf(intake, { pos: [2.4, 0.4, sd * 0.78], rot: [0, -sd * 0.5, 0] }); F.push(intake); }
   for (const s of [1, -1]) {
-    const canard = roundedBox(0.32, 0.025, 0.22, 0.01, 2); xf(canard, { pos: [2.25, 0.36, s * 0.98], rot: [s * 0.15, -s * 0.2, 0.12] }); parts.push(canard);
+    const canard = roundedBox(0.32, 0.025, 0.22, 0.01, 2); xf(canard, { pos: [2.25, 0.36, s * 0.98], rot: [s * 0.15, -s * 0.2, 0.12] }); F.push(canard);
     const skirt = roundedBox(2.5, 0.07, 0.1, 0.025, 3); xf(skirt, { pos: [0.1, 0.3, s * 1.12] }); parts.push(skirt);
     const skirt2 = roundedBox(2.3, 0.025, 0.2, 0.01, 2); xf(skirt2, { pos: [0.1, 0.27, s * 1.1] }); parts.push(skirt2);
     const mirror = roundedBox(0.16, 0.1, 0.2, 0.04, 3); xf(mirror, { pos: [0.85, 1.03, s * 1.1], rot: [0, s * 0.4, 0] }); parts.push(mirror);
@@ -85,16 +85,16 @@ function carbonKit() {
     const endplate = roundedBox(0.5, 0.34, 0.025, 0.012, 2); xf(endplate, { pos: [-2.5, 1.32, s * 0.98] }); parts.push(endplate);
     const strut = roundedBox(0.08, 0.34, 0.05, 0.02, 2); xf(strut, { pos: [-2.38, 1.12, s * 0.5] }); parts.push(strut);
   }
-  const diffuser = roundedBox(0.5, 0.05, 1.7, 0.015, 3); xf(diffuser, { pos: [-2.6, 0.3, 0], rot: [0, 0, 0.22] }); parts.push(diffuser);
-  for (let k = -3; k <= 3; k++) { const fin = roundedBox(0.5, 0.14, 0.02, 0.008, 1); xf(fin, { pos: [-2.62, 0.34, k * 0.24], rot: [0, 0, 0.22] }); parts.push(fin); }
+  const diffuser = roundedBox(0.5, 0.05, 1.7, 0.015, 3); xf(diffuser, { pos: [-2.6, 0.3, 0], rot: [0, 0, 0.22] }); R.push(diffuser);
+  for (let k = -3; k <= 3; k++) { const fin = roundedBox(0.5, 0.14, 0.02, 0.008, 1); xf(fin, { pos: [-2.62, 0.34, k * 0.24], rot: [0, 0, 0.22] }); R.push(fin); }
   const roof = roundedBox(0.04, 0.04, 0.04, 0.01, 1); parts.push(roof);
-  const lip = roundedBox(0.3, 0.025, 1.7, 0.01, 2); xf(lip, { pos: [-2.42, 1.27, 0], rot: [0, 0, 0.1] }); parts.push(lip);   // fixed wing main plane
+  const lip = roundedBox(0.3, 0.025, 1.7, 0.01, 2); xf(lip, { pos: [-2.42, 1.27, 0], rot: [0, 0, 0.1] }); R.push(lip);   // fixed wing main plane
   // sharp front: angular wedge bumper + carbon frame around the intake
   const sh = new THREE.Shape(); sh.moveTo(2.28, -0.84); sh.lineTo(2.74, -0.52); sh.lineTo(2.74, 0.52); sh.lineTo(2.28, 0.84); sh.closePath();
-  const wedge = new THREE.ExtrudeGeometry(sh, { depth: 0.1, bevelEnabled: false }); wedge.rotateX(-Math.PI / 2); wedge.deleteAttribute('uv'); xf(wedge, { pos: [0, 0.31, 0] }); parts.push(wedge);
-  for (const y of [0.442, 0.64]) { const rail = roundedBox(0.07, 0.025, 1.12, 0.008, 1); xf(rail, { pos: [2.62, y, 0] }); parts.push(rail); }
-  for (const z of [-0.54, 0.54]) { const post = roundedBox(0.07, 0.23, 0.03, 0.008, 1); xf(post, { pos: [2.62, 0.54, z] }); parts.push(post); }
-  return mergeGeo(parts);
+  const wedge = new THREE.ExtrudeGeometry(sh, { depth: 0.1, bevelEnabled: false }); wedge.rotateX(-Math.PI / 2); wedge.deleteAttribute('uv'); xf(wedge, { pos: [0, 0.31, 0] }); F.push(wedge);
+  for (const y of [0.442, 0.64]) { const rail = roundedBox(0.07, 0.025, 1.12, 0.008, 1); xf(rail, { pos: [2.62, y, 0] }); F.push(rail); }
+  for (const z of [-0.54, 0.54]) { const post = roundedBox(0.07, 0.23, 0.03, 0.008, 1); xf(post, { pos: [2.62, 0.54, z] }); F.push(post); }
+  return { main: mergeGeo(parts), front: mergeGeo(F), rear: mergeGeo(R) };
 }
 function wingFlap() {
   const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.quadraticCurveTo(0.12, 0.05, 0.34, 0.01); sh.lineTo(0.34, -0.005); sh.quadraticCurveTo(0.12, 0.0, 0, -0.012); sh.closePath();
@@ -320,14 +320,15 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
   const mesh = (g, m, name, cast = true, recv = false) => { const o = new THREE.Mesh(g, m); o.name = name; o.castShadow = cast; o.receiveShadow = recv; return o; };
   const body = mesh(bg.body, mats.paint, 'body', true, true), hood = mesh(bg.hood, mats.paint, 'hood', true, true);
   const glass = mesh(canopy, mats.glass, 'glass', false);
-  const kit = mesh(mergeGeo([carbonKit(), roofGeo, pillars(canopy)]), mats.carbon, 'aero'),   // aero kit + roof panel + pillars in one draw call
+  const ck = carbonKit(), kit = mesh(mergeGeo([ck.main, roofGeo, pillars(canopy)]), mats.carbon, 'aero'),   // aero kit + roof panel + pillars in one draw call
+     kitF = mesh(ck.front, mats.carbon, 'aero-front'), kitR = mesh(ck.rear, mats.carbon, 'aero-rear'),   // bumper / diffuser: peel off separately
      flap = mesh(wingFlap(), mats.carbon, 'wing-flap'); flap.position.set(-2.62, 1.3, 0);
   const plates = mesh(armour(), mats.gun, 'armour');
   const cabin = mesh(interior(), mats.interior, 'interior', false), disp = mesh(displays(), mats.display, 'displays', false);
   const heads = mesh(headLights(), mats.head, 'headlights', false), tails = mesh(tailLights(), mats.tail, 'taillights', false), revs = mesh(reverseLights(), mats.rev, 'reverse', false);
   const under = mesh(underglow(), mats.under, 'underglow', false), gaps = mesh(mergeGeo([panelGaps(canopy), pillars(canopy)]), mats.gap, 'gaps', false);
   const inn = internals(), innDark = mesh(inn.dark, mats.dark, 'internals-dark', false), innMetal = mesh(inn.metal, mats.gun, 'internals-metal', true);
-  sprung.add(innDark, innMetal, innDark, innMetal, body, hood, glass, kit, flap, plates, cabin, disp, heads, tails, revs, under, gaps);
+  sprung.add(innDark, innMetal, innDark, innMetal, body, hood, glass, kit, kitF, kitR, flap, plates, cabin, disp, heads, tails, revs, under, gaps);
   gaps.geometry = panelGaps(canopy);
   // underglow decal on the ground (unsprung)
   const decal = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 3.4).rotateX(-Math.PI / 2), mats.glowDecal); decal.position.set(0, 0.03, 0); decal.name = 'underglow-decal'; decal.renderOrder = 2; root.add(decal);
@@ -351,7 +352,7 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
   const iTyre = mkI(wp.tyre, mats.tyre, 'tyres', true), iRim = mkI(wp.rim, mats.rim, 'rims', true), iDisc = mkI(wp.disc, mats.disc, 'discs', false), iCal = mkI(wp.caliper, mats.caliper, 'calipers', false);
   const slots = [[WHEELS.front, WHEELS.track, 1, true], [WHEELS.front, -WHEELS.track, -1, true], [WHEELS.rear, WHEELS.track, 1, false], [WHEELS.rear, -WHEELS.track, -1, false]];
 
-  const S = { pitch: 0, pitchV: 0, roll: 0, rollV: 0, heave: 0, heaveV: 0, spin: 0, dentKey: '', stage: 0, turretYaw: 0, turretPitch: 0, flap: 0.2, heat: 0, t: 0, brakeOn: null, charred: false };
+  const S = { pitch: 0, pitchV: 0, roll: 0, rollV: 0, heave: 0, heaveV: 0, spin: 0, dentKey: '', stage: 0, turretYaw: 0, turretPitch: 0, flap: 0.2, heat: 0, t: 0, brakeOn: null, charred: false, lost: {} };
   const dummy = new THREE.Object3D(), tmp = new THREE.Matrix4(), qa = new THREE.Quaternion();
   const charredCol = new THREE.Color(0x0c0b0a), paintCol = new THREE.Color(color);
 
@@ -363,7 +364,8 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
       const [x, z, side, front] = slots[i];
       const yaw = (front ? steer : 0) + (side < 0 ? Math.PI : 0);
       const y = WHEELS.radius - (look.charred ? 0.07 : 0) + S.heave * 0.0;
-      dummy.position.set(x, y, z); dummy.rotation.set(0, yaw, 0); dummy.scale.set(1, look.charred ? 0.84 : 1, 1);
+      const gone = (i === 0 && S.lost.wheelFR) || (i === 3 && S.lost.wheelRL) ? 0 : 1;
+      dummy.position.set(x, y, z); dummy.rotation.set(0, yaw, 0); dummy.scale.set(gone, look.charred ? 0.84 * gone : gone, gone);
       dummy.updateMatrix(); tmp.copy(dummy.matrix);
       iCal.setMatrixAt(i, tmp);                                         // caliper: steers, does not spin
       const spin = (side < 0 ? 1 : -1) * S.spin * locked;
@@ -373,6 +375,12 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
     for (const im of [iTyre, iRim, iDisc, iCal]) im.instanceMatrix.needsUpdate = true;
   }
 
+  /** Parts torn off by the sim ('partLost' events): hood, doorL/doorR (side armour), bumperF, bumperR, spoiler, turret, wheelFR, wheelRL. */
+  function applyLost(look) {
+    const L = S.lost;
+    hood.visible = look.hood && !L.hood; plates.visible = look.plates && !(L.doorL || L.doorR);
+    flap.visible = !L.spoiler; kitF.visible = !L.bumperF; kitR.visible = !L.bumperR; turret.visible = !L.turret;
+  }
   function update(st, dt, opts = {}) {
     dt = clamp(dt, 0, 0.1); S.dt = dt; S.t += dt;
     const look = damageLook(st.frac ?? 1, !!st.wrecked);
@@ -413,6 +421,7 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
     tGun.position.x = st.firing ? -0.05 * (0.5 + 0.5 * Math.sin(S.t * 90)) : lerp(tGun.position.x, 0, 0.3);
     const fl = !!st.firing && !st.wrecked && Math.sin(S.t * 85) > -0.2; for (const f of flashes) { f.visible = fl; f.scale.setScalar(0.8 + 0.5 * Math.random()); }
     tEye.visible = look.lights;
+    applyLost(look);
     // thrusters + fire
     const thr = clamp((st.throttle || 0) * (st.speed < 60 ? 1 : 0.7), 0, 1) * (look.lights ? 1 : 0);
     for (const f of flames) { f.visible = thr > 0.15; f.scale.set(0.22 + thr * 0.45 + 0.1 * Math.random(), 0.55 + thr * 0.35, 0.55 + thr * 0.35); }
@@ -428,9 +437,11 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
     return S.stage;
   }
 
-  const all = () => [innDark, innMetal, body, hood, glass, kit, flap, plates, cabin, disp, heads, tails, revs, under, gaps, tBase, tGun, tEye, iTyre, iRim, iDisc, iCal];
+  const all = () => [innDark, innMetal, body, hood, glass, kit, kitF, kitR, flap, plates, cabin, disp, heads, tails, revs, under, gaps, tBase, tGun, tEye, iTyre, iRim, iDisc, iCal];
   const api = {
     update, S, mats, uniforms: uni, look: damageLook,
+    setPartLost(part, lost = true) { S.lost[part] = !!lost; },
+    get lostParts() { return Object.keys(S.lost).filter((k) => S.lost[k]); },
     get stage() { return S.stage; },
     anchors: { exhaust: PBR_SPEC.exhaust, thrusters: PBR_SPEC.thrusters, engine: PBR_SPEC.engine, muzzle: PBR_SPEC.muzzle },
     setEnvIntensity(v) { for (const m of Object.values(mats)) if (m.envMapIntensity !== undefined) m.envMapIntensity = (m.userData.baseEnv ??= m.envMapIntensity) * v; },

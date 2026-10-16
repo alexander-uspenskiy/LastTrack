@@ -5,6 +5,7 @@ import { TRACKS } from '../../src/data/tracks/index.js';
 import { idealLapTime } from '../../src/sim/ai/racingLine.js';
 import { createDirector } from '../../src/sim/raceDirector.js';
 import { defaultSave } from '../../src/data/saveStore.js';
+import { WRECK_LIFETIME } from '../../src/sim/damage.js';
 
 const IDS = TRACKS.map((t) => t.id);
 const MAXSTEPS = 120 * 700;
@@ -119,8 +120,8 @@ test('kill credit: shooter gets the kill and wreck event', () => {
   assert.equal(a.kills, 1);
   assert.equal(sim.snapshot().cars[1].wrecked, true);
   assert.ok(sim.snapshot().hazards.some((h) => h.type === 'wreck'));
-  // wreck is removed after 5 s
-  for (let i = 0; i < 120 * 6; i++) sim.step({ throttle: 0, brake: 0, steer: 0, fire: false });
+  // a wreck stays on the track as an obstacle for WRECK_LIFETIME seconds, then is removed
+  for (let i = 0; i < 120 * (WRECK_LIFETIME + 1); i++) sim.step({ throttle: 0, brake: 0, steer: 0, fire: false });
   assert.ok(!sim.snapshot().hazards.some((h) => h.type === 'wreck'));
   assert.equal(sim.result().player.kills, 1);
 });

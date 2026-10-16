@@ -17,6 +17,7 @@ import { createRenderHost } from '../render/renderHost.js';
 import { createRaceController } from '../render/raceController.js';
 import { createCarPreview } from '../render/carPreview.js';
 import { createMinimap } from '../render/minimap.js';
+import { createMenuScene } from '../render/menuScene.js';
 import { createAudioEngine } from '../audio/audioEngine.js';
 import { attachPBR } from '../render/pbr/pbrHost.js';
 import { readQuality, nextQuality } from '../render/pbr/quality.js';
@@ -35,6 +36,8 @@ import { createRaceSettingsScreen } from '../ui/screens/raceSettings.js';
 import { createLoadingScreen } from '../ui/screens/loading.js';
 import { createPauseScreen } from '../ui/screens/pause.js';
 import { createResultsScreen } from '../ui/screens/results.js';
+import { createSettingsSheet } from '../ui/screens/settingsSheet.js';
+import { loadSettings, saveSettings, normalizeSettings } from '../ui/settings.js';
 
 export const SIM_HZ = 120;
 const SIM_DT = 1 / SIM_HZ;
@@ -47,6 +50,7 @@ const ERRORS = {
   'nothing-to-repair': 'Nothing to repair.',
 };
 const inRaceState = (s) => s === 'race' || s === 'paused';
+const MENU_3D = new Set(['title', 'carSelect', 'garage', 'shop']);   // states drawn over the live 3D showroom
 
 /** Wrap an optional subsystem so that a bug in it never breaks the game. */
 function safe(obj, onError) {
@@ -75,9 +79,17 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
   };
 
   let host = null;
-  try { host = createRenderHost(canvas, slice && sliceStyle === 'pbr' ? { palettePass: false } : {}); } catch (e) { reportError(e); }
-  let pbr = null;
-  if (host && slice && sliceStyle === 'pbr') { try { pbr = attachPBR(host, { quality: quality || readQuality(typeof location !== 'undefined' ? location.search : '', typeof localStorage !== 'undefined' ? localStorage : null), env: 'dusk' }); } catch (e) { reportError(e); } }
+  try { host = createRenderHost(canvas, { palettePass: false }); } catch (e) { reportError(e); }
+  let pbr = null, envKind = 'showroom';
+  const usePbr = !(slice && sliceStyle === 'retro');   // the modern lighting/post stack is the default look everywhere except the legacy retro slice
+  if (host && usePbr) { try { pbr = attachPBR(host, { quality: quality || readQuality(typeof location !== 'undefined' ? location.search : '', typeof localStorage !== 'undefined' ? localStorage : null), env: envKind }); } catch (e) { reportError(e); } }
+  const setEnv = (k) => { if (pbr && envKind !== k) { envKind = k; try { pbr.setEnv(k); } catch (e) { reportError(e); } } };
+  // player settings live in real localStorage even when the save is in-memory (?fresh=1 / slice)
+  const settingsStorage = getDefaultStorage();
+  let settings = loadSettings(settingsStorage);
+  if (pbr) settings = { ...settings, quality: pbr.qualityName };
+  let stage = null;
+  if (host && pbr) { try { stage = createMenuScene(host, { canvas }); } catch (e) { reportError(e); } }
   let audio = null;
   try { audio = safe(createAudioEngine(), reportError); } catch (e) { reportError(e); }
 
@@ -103,6 +115,8 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
     get controller() { return controller; },
     slice: !!slice, sliceStyle,
     get pbr() { return pbr; },
+    get stage() { return stage; },
+    get settings() { return settings; },
   };
 
   // ---------- save helpers ----------
@@ -146,6 +160,27 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
     },
   });
 
+  // ---------- settings ----------
+  function applySettings(prev) {
+    document.body.classList.toggle('no-hints', !settings.hints);
+    if (audio) {
+      audio.setMuted(settings.muted); muted = settings.muted;
+      audio.setVolume(settings.master);
+      audio.setMusic(settings.music > 0.02);
+      audio.setMusicVolume?.(settings.music); audio.setSfxVolume?.(settings.sfx);
+    }
+    if (pbr && prev && prev.quality !== settings.quality) { pbr.setQuality(settings.quality); stage?.setQuality(settings.quality); }
+    if (controller && prev && prev.camera !== settings.camera) controller.setCamera(settings.camera);
+  }
+  game.updateSettings = (patch) => {
+    const prev = settings;
+    settings = normalizeSettings({ ...settings, ...patch });
+    saveSettings(settingsStorage, settings);
+    applySettings(prev);
+    bus.emit('settings:changed', settings);
+    return settings;
+  };
+
   // ---------- HUD / input / touch ----------
   const hud = createHud({ root, getWeapon });
   game.hud = hud;
@@ -159,12 +194,14 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
     const st = flow.state;
     if (a === 'pause') { if (st === 'race') game.pause(); else if (st === 'paused') game.resume(); }
     else if (a === 'camera') { if (st === 'race' && controller) { controller.cycleCamera(); } }
-    else if (a === 'quality') { if (pbr) { const n = pbr.setQuality(nextQuality(pbr.qualityName)); hud.toast('GRAPHICS: ' + n.toUpperCase(), 1200); } }
-    else if (a === 'mute') { muted = !muted; audio?.setMuted(muted); hud.toast(muted ? 'MUTED' : 'SOUND ON', 900); }
+    else if (a === 'quality') { if (pbr) { const n = pbr.setQuality(nextQuality(pbr.qualityName)); settings = { ...settings, quality: n }; saveSettings(settingsStorage, settings); stage?.setQuality(n); hud.toast('GRAPHICS: ' + n.toUpperCase(), 1200); } }
+    else if (a === 'mute') { muted = !muted; settings = { ...settings, muted }; saveSettings(settingsStorage, settings); audio?.setMuted(muted); hud.toast(muted ? 'MUTED' : 'SOUND ON', 900); }
   }
 
   // ---------- screens ----------
-  const ctx = { game, flow, bus };
+  const sheet = createSettingsSheet({ game });
+  root.append(sheet.el);
+  const ctx = { game, flow, bus, openSettings: () => sheet.open() };
   const screens = {
     title: createTitleScreen(ctx), carSelect: createCarSelectScreen(ctx), garage: createGarageScreen(ctx),
     shop: createShopScreen(ctx), roster: createRosterScreen(ctx), trackSelect: createTrackSelectScreen(ctx),
@@ -210,10 +247,11 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
     acc = 0; endTimer = 0; wreckTimer = 0; finalized = false; lastResult = null;
     if (host) {
       controller = createRaceController(host, track, config);
+      if (settings.camera && settings.camera !== 'chase') controller.setCamera(settings.camera);
       try { host.resize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight); } catch (e) { reportError(e); }
     }
     const names = snapA.cars.map((c) => c.name);
-    hud.begin({ createMinimap, track, names, hero: !!config.hero });
+    hud.begin({ createMinimap, track, names, hero: !!config.hero, carId: config.hero ? 'hammer' : (config.player && config.player.carId) || saveData.carId });
     audio?.resume();
     audio?.startRace();
     bus.emit('race:created', { config });
@@ -266,13 +304,19 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
           try { startRace(); flow.transition('race'); } catch (e) { reportError(e); flow.transition('garage'); }
         }));
       }
-      if (garage) { if (to === 'garage') { garage.show(); pbr?.setEnv('showroom'); } else if (from === 'garage') { garage.hide(); if (to === 'loading') pbr?.setEnv('dusk'); } }
+      if (garage) { if (to === 'garage') { garage.show(); setEnv('showroom'); } else if (from === 'garage') { garage.hide(); if (to === 'loading') setEnv('dusk'); } }
+      const menu3d = !!stage && MENU_3D.has(to) && !(garage && to === 'garage');
+      if (stage) { if (menu3d) { setEnv('showroom'); stage.show(); } else stage.hide(); }
+      if (to === 'loading' || inRaceState(to)) setEnv('dusk');
       if (to === 'title') document.body.classList.remove('racing');
       document.body.classList.toggle('racing', inRaceState(to));
+      document.body.classList.toggle('scene3d', menu3d || (!!garage && to === 'garage'));
       showScreen(to, params);
     } catch (e) { reportError(e); }
   });
-  if (slice && sliceStyle === 'pbr') flow.force('garage'); else showScreen('title', {});
+  applySettings(null);
+  if (slice && sliceStyle === 'pbr') flow.force('garage');
+  else { if (stage) { stage.setCar({ carId: 'hammer', color: 9 }); stage.setMode('title', { side: 1 }); stage.show(); document.body.classList.add('scene3d'); } showScreen('title', {}); }
   audio?.setScene('menu'); // plays once the first user gesture creates the AudioContext
 
   // ---------- main loop ----------
@@ -282,9 +326,12 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
     lastT = t;
     const st = flow.state;
     if (st === 'race' && sim) {
-      const { steps, acc: a } = advanceAccumulator(acc, dt, SIM_HZ);
+      // hit-stop / slow-mo on wrecks and big hits: the controller scales the real frame time the sim is fed (sim stays deterministic)
+      const ts = controller && controller.stepTime ? controller.stepTime(dt) : 1;
+      const { steps, acc: a } = advanceAccumulator(acc, dt * ts, SIM_HZ);
       acc = a;
       const inp = input.read();
+      inp.nitro = inp.nitro || input.pressed.has('KeyF') || input.pressed.has('KeyX');   // nitro: F / X (Shift stays the handbrake)
       let events = [];
       for (let i = 0; i < steps; i++) {
         sim.step(inp);
@@ -294,6 +341,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
         inp.cycleWeapon = false; inp.selectWeapon = null; // edges apply to the first step only
       }
       if (steps > 0 && events.length !== (snapB.events?.length ?? 0)) snapB = { ...snapB, events };
+      else if (steps === 0 && snapB?.events?.length) snapB = { ...snapB, events: [] };   // slow-mo / hit-stop frames: do not replay the last tick's events (HUD feed)
       const me = snapB.cars[0];
       if (controller) { controller.update(snapA, snapB, acc, dt); host.render(); }
       hud.update(snapB);
@@ -308,6 +356,8 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
       } else hud.setNote?.('');
     } else if (st === 'garage' && garage) {
       try { garage.update(dt); host.render(); } catch (e) { reportError(e); }
+    } else if (stage && stage.shown && MENU_3D.has(st)) {
+      try { stage.update(dt); host.render(); } catch (e) { reportError(e); }
     } else if (st === 'paused' && controller) {
       try { controller.update(snapB, snapB, 0, 0); host.render(); } catch (e) { reportError(e); }
     }
@@ -330,6 +380,10 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
   const listen = (tg, ev, fn, o) => { tg.addEventListener(ev, fn, o); cleanups.push(() => tg.removeEventListener(ev, fn, o)); };
   listen(window, 'resize', () => { try { host?.resize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight); } catch (e) { reportError(e); } });
   listen(document, 'visibilitychange', () => { if (document.hidden) pause(); });
+  listen(window, 'pointermove', (e) => {
+    const x = (e.clientX / (window.innerWidth || 1)) * 2 - 1, y = (e.clientY / (window.innerHeight || 1)) * 2 - 1, st = document.documentElement.style;
+    st.setProperty('--px', x.toFixed(3)); st.setProperty('--py', y.toFixed(3));
+  });
   const unlock = () => audio?.resume();
   listen(window, 'pointerdown', unlock, { once: true });
   listen(window, 'keydown', unlock, { once: true });
@@ -346,7 +400,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, slice = 
       cancelAnimationFrame(rafId);
       cleanups.forEach((c) => c());
       input.dispose(); touch.dispose();
-      disposeRace(); hud.dispose();
+      disposeRace(); hud.dispose(); sheet.dispose(); try { stage?.dispose(); } catch { /* ignore */ }
       audio?.dispose();
       try { host?.dispose(); } catch { /* ignore */ }
     },

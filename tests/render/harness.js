@@ -1,4 +1,5 @@
 import { createRenderHost } from '../../src/render/renderHost.js';
+import { attachPBR } from '../../src/render/pbr/pbrHost.js';
 import { createRaceController } from '../../src/render/raceController.js';
 import { createMinimap } from '../../src/render/minimap.js';
 import { drawPortrait } from '../../src/render/portraits.js';
@@ -11,7 +12,7 @@ const $ = (id) => document.getElementById(id);
 const host = createRenderHost($('c'));
 const preview = createCarPreview($('pv'));
 preview.show({ carId: 'hammer', color: 8, upgrades: { armor: 1, engine: 1 } });
-for (const d of DRIVERS) { const c = document.createElement('canvas'); c.width = c.height = 96; drawPortrait(c, d); $('pt').appendChild(c); }
+for (const d of DRIVERS) { const c = document.createElement('canvas'); c.width = c.height = 192; drawPortrait(c, d); $('pt').appendChild(c); }
 TRACKS.forEach((t, i) => { const o = document.createElement('option'); o.value = i; o.textContent = t.id; $('tr').appendChild(o); });
 let ctrl, track, mm, tick = 0, t = 0;
 const specs = [['wasp', 8, 10], ['hammer', 12, 7], ['bulwark', 4, 14], ['hammer', 2, 8], ['wasp', 9, 10]];
@@ -38,7 +39,9 @@ function snapshot(time) {
 }
 $('tr').onchange = () => load(+$('tr').value);
 $('cam').onclick = () => ctrl.cycleCamera();
-$('pal').onclick = () => host.setPalettePass(!host.palettePassActive);
+let pbrCtl = null;
+$('pbr').onclick = () => { if (!pbrCtl) { pbrCtl = attachPBR(host, { quality: 'med' }); host.pbr = pbrCtl; load(+$('tr').value || 0); } };   // reload the race so lights/shadows are rebuilt with PBR present
+if (/pbr=1/.test(location.search)) { pbrCtl = attachPBR(host, { quality: new URLSearchParams(location.search).get('q') || 'med' }); host.pbr = pbrCtl; }
 window.__h = { host, get ctrl() { return ctrl; }, get t() { return t; }, set t(v) { t = v; } };
 load(0);
 let prev = snapshot(0), last = performance.now(), frames = 0, fpsT = last;

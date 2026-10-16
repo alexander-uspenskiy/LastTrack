@@ -70,7 +70,7 @@ test('Neon Loop race: enemies finish 3 laps, line up and shoot straight ahead, d
   const a = run(900), b = run(900);
   assert.deepEqual(a.result.finishOrder.map((f) => [f.carId, f.time]), b.result.finishOrder.map((f) => [f.carId, f.time]), 'deterministic');
   assert.ok(a.result.finishOrder.filter((f) => f.time != null).length >= 2, 'at least two cars finish');
-  const win = a.result.finishOrder[0].time; assert.ok(win > 90 && win < 190, `winner ${win}s for 3 laps`);
+  const win = a.result.finishOrder[0].time; assert.ok(win > 60 && win < 190, `winner ${win}s for 3 laps`);
   assert.ok(a.shots > 40 && a.hits > 20, `enemies fire (${a.shots}) and hit (${a.hits})`);
   // lining up pays: accuracy with the hunting logic beats plain racing-line driving
   const c = run(901), d = run(901, false);

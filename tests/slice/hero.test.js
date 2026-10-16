@@ -147,7 +147,8 @@ test('engine audio layers: rpm, boost, squeal, gravel, limiter', () => {
 });
 
 test('dash helpers', () => {
-  assert.deepEqual([0, 0.3, 0.6, 0.9].map(zoneColor), [11, 10, 9, 8]);
+  assert.deepEqual([0, 1].map(zoneColor), ['#5dff9d', '#ff4466']);
+  assert.ok([0, 0.3, 0.6, 0.9].map(zoneColor).every((c, i, a) => /^#[0-9a-f]{6}$/.test(c) && (i === 0 || c !== a[i - 1])), 'zoneColor: hex, distinct across the damage range');
   assert.ok(gaugeAngle(0, 100) < gaugeAngle(50, 100) && gaugeAngle(50, 100) < gaugeAngle(100, 100));
   assert.ok(Math.abs(gaugeAngle(100, 100) - gaugeAngle(0, 100) - 1.5 * Math.PI) < 1e-9);
   assert.deepEqual([gearLabel(3, false, 20), gearLabel(1, true, 3), gearLabel(1, false, 0)], ['3', 'R', 'N']);

@@ -12,7 +12,7 @@ MVP content (data-driven so more can be added later):
 - **4 weapons**: `machinegun`, `rocket`, `caltrops`, `terminator` (heavy homing missile).
 - **3 upgrade lines** × 3 levels: `armor`, `engine`, `tyres`; plus buying weapons & ammo refills.
 - **Modes**: `practice` (alone or with rivals disabled, unlimited time, no money), `race` (prize money by position, kill bonus, repair bill).
-- Look: low-poly flat-shaded 3D, **16-colour palette** (§2.1) with a palette-quantise post effect, 16-colour pixel-art rival portraits generated in code.
+- Look: **modern full-colour** low-poly 3D with PBR materials, IBL + bloom (the `render/pbr` stack is attached for the whole game), vector rival portraits generated in code, and a 'Neon Holo' glass UI (`styles.css`, `hud.css`). The old 16-colour palette/quantise pass is gone: `data/palette.js` survives only as a set of semantic colour ids (data files still reference indices 0..15) that `render/paletteRef.js` maps to `MODERN_HEX`.
 
 ## 1. Global conventions
 - **Units**: metres, seconds, radians, m/s. UI: kph = m/s*3.6.
@@ -38,7 +38,7 @@ src/sim/     carPhysics.js damage.js weapons.js projectiles.js collisions.js
              raceSim.js raceDirector.js fixedStep.js                  B
 src/sim/ai/  racingLine.js aiDriver.js                                B
 src/render/  renderHost.js trackMesh.js carModel.js carPreview.js raceController.js
-             cameras.js scenery.js effects.js minimap.js palettePass.js
+             cameras.js scenery.js effects.js minimap.js menuScene.js
              portraits.js geomUtil.js                                 C
 src/audio/   audioEngine.js                                           C
 src/game/    game.js                                                  D
@@ -147,10 +147,10 @@ buildCarMesh({ carId, color, helmetColor, wrecked? }) -> THREE.Group   // proced
 // carPreview.js
 createCarPreview(canvas) -> { show({carId,color,upgrades}), setSpin(bool), dispose() }   // garage/car-select turntable
 // portraits.js
-drawPortrait(canvas2d, driver /*Driver*/) -> void   // 16-colour pixel-art portrait (e.g. 48×48 upscaled, nearest-neighbour), seeded from driver.portrait
+drawPortrait(canvas2d, driver /*Driver*/) -> void   // modern vector/gradient cyberpunk bust (256 logical px, scaled), seeded from driver.portrait; pure part: portraitSpec(driver)
 // effects.js: muzzle flash, tracers, rocket trail, explosion, smoke/fire on damaged cars, caltrop sprites, tyre skid marks — driven by snapshot.events
 // minimap.js: draws track outline + car dots on a 2D canvas via createMinimap(canvas, track) -> { draw(snapshot) }
-// palettePass.js: post effect quantising to PALETTE (nearest colour, optional ordered dither) — must be toggleable and must not break if WebGL features missing.
+// (palettePass.js was removed — no quantise/dither pass exists.) menuScene.js: cinematic showroom stage rendered into the main host behind title/car select/garage/armory (game.stage); needs host.pbr, falls back to the CSS animated backdrop.
 // audioEngine.js
 createAudioEngine() -> { resume() /*after user gesture*/, startRace(), update(snapshot, dt), stop(), setMuted(b), setVolume(v), dispose() }
 ```
@@ -162,7 +162,7 @@ Audio is fully procedural WebAudio (engine hum from player speed + RPM-like pitc
 - **HUD**: speed, lap n/N, position, armor bar (colour by %), weapon bar with ammo & selected slot, rival standings strip, minimap, countdown, "WRECKED"/"FINISH" banners, kill feed.
 - **Controls**: WASD/arrows drive, Space fire, E/Tab cycle weapon (1–4 direct), Shift handbrake, C camera, P/Esc pause, M mute. Touch controls for mobile (steer pad + fire/cycle buttons).
 - **Screens**: car select shows the 3-car turntable and stat bars; garage shows cash, upgrade rows (level pips + cost), repair bill; shop lists weapons (buy/ammo); roster shows the 4 rivals with portraits, bios, favourite weapons; results show standings, prize, kills.
-- Aesthetic: chunky retro UI in the 16-colour palette, monospace/pixel-ish font (system fallback, no external fonts), CRT-ish scanlines optional. Layout works at 1280×720 and phone landscape.
+- Aesthetic: 'Neon Holo' — dark glass panels, thin cyan/magenta/amber neon lines, system font stack only (no external fonts), live 3D showroom behind the menus, SVG icons (`ui/icons.js`), settings sheet (`ui/settings.js`, stored in localStorage `lasttrack.settings`), keyboard/gamepad spatial focus (`ui/menuLogic.js` + `dom.attachMenuKeys`). Layout works at 1280×720 and phone landscape (844×390).
 
 ## 8. Verification (all packages)
 - `npm test` green. Every package ships tests for its pure parts.
@@ -174,3 +174,9 @@ Audio is fully procedural WebAudio (engine hum from player speed + RPM-like pitc
 - Default slice art = **PBR**: `render/pbr/` — `carBody.js` (lofted smooth body, canopy, dents), `heroCarPBR.js` (materials, wheels, turret, lights, suspension, damage, wet/dirt), `maps.js` (procedural normal/roughness/carbon/tread), `env.js` (HDR IBL), `post.js` (HDR RT, SSAO, bloom, motion blur, ACES), `pbrHost.js` (`attachPBR(host,{quality,env})`, key light + shadows), `quality.js`.
 - Showroom: `tools/showroom.html?q=high&view=q34&stage=0..4&wet=&dirt=&env=showroom|dusk`.
 - Sim additions (all modes): `carPhysics.js` engine/gears/limiter, friction-limited braking, weight transfer, slip curve, oversteer; `surfaces.js`; per-zone damage `dmgMap`; snapshot gains `gear rpm ax ay load slip wheelspin braking surface throttle limiter shifted dmg`. Player wreck no longer ends the race (20 s spectate, `WRECK_SPECTATE`).
+
+## 10. Arcade handling, forgiving walls, destruction (extension, all modes incl. slice)
+- **Handling** (`sim/carPhysics.js`, constants in `TUNING`): high forgiving grip (`mu` 2.5), snappy steering (`steerRate` 12, `yawResponse` 15, centring `steerReturn` 20), drift state (`driftTarget`: handbrake = full kick, sustained hard lock > 0.3–0.8 s at > 22 m/s = partial kick; taps never kick), auto counter-steer (`slideRecovery`, dead zone 0.1 rad, stiffens past 0.55 rad, rear grip restored past 0.9 rad => no spin-outs), +7.5 % straight-line boost after 1.6 s, optional **nitro** (`PlayerInput.nitro`, 2 s burn, 1.2 s cooldown, recharge 0.14/s; the game maps F / X), braking capped at ≈1.3 g (`brakeGrip` 0.55). `stepBody` mods: `kick` (0 for AI: clean lines), `noNitro`. AI plans corners on `AI_CORNER_GRIP` 0.78 and brakes on `AI_BRAKE_USE` 0.8 of `brakeLimit` (`ai/racingLine.js`).
+- **Walls** (`sim/collisions.js`, `WALL`): soft run-off band 1.4 m (`softEdge`: inward push + outward-speed bleed + nose alignment), solid wall with Coulomb friction (tangential loss = 0.15·normal speed absorbed, restitution 0.12) so glancing hits keep their speed, nose swings along the wall, damage only above 9 m/s impact (`wallDamage`, 0.9 armor per m/s above). `sim/recovery.js`: human cars wrong-way (> 115° for 1.4 s below 14 m/s) or wedged (1.8 s) are swung round over 0.7 s ('recover' event).
+- **Snapshot additions** (compatible): car `nitro nitroOn drift boost parts wreckT`; events `partLost {carId,part,wreck,power,x,y,dx,dy,vx,vy,heading,seed}` (parts in `sim/parts.js`: bumperF hood doorR doorL bumperR spoiler wheelFR turret wheelRL; zone damage or armor fraction thresholds; a wreck sheds the rest), `scrape {carId,x,y,speed,impact,side}`, `recover {carId,x,y}`; `explosion` gains `kind` (weapon id or `'wreck'`), `big`, `carId`/`ownerId`; `wreck` gains pose + seed. Wrecks stay solid for `WRECK_LIFETIME` = 45 s. Cosmetic seeds come from a separate PRNG stream (gameplay determinism unchanged).
+- **Render**: `render/debris.js` (pure `DebrisField` + instanced renderer, 4 draw calls, 200 pieces), `render/effects.js` (staged explosions: fireball ramp, shockwave rings, secondary blasts, smoke column, scorch decals, burning wrecks, part-loss sparks, scrape sparks, nitro flames), `render/impactFx.js` (event -> shake / hit-stop / slow-mo; `controller.stepTime(dt)` returns the time scale game.js applies to the sim's frame time), `carModel.applyLostParts`, `heroCarPBR` `setPartLost`. Audio: tiered explosions, part tear, wall scrape, nitro whoosh.

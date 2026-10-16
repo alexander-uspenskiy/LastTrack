@@ -3,7 +3,7 @@ import { h, button, statBar, attachMenuKeys } from '../dom.js';
 import { getCar } from '../../data/cars.js';
 import { getDriver } from '../../data/drivers.js';
 import { getTrack } from '../../data/tracks/index.js';
-import { paletteHex } from '../../data/palette.js';
+import { uiHex } from '../colors.js';
 import { SLICE_FIELD, SLICE_TRACK_ID, SLICE_LAPS } from '../../data/sliceConfig.js';
 import { QUALITY_ORDER } from '../../render/pbr/quality.js';
 
@@ -13,7 +13,7 @@ export function createSliceGarageScreen({ game, flow }) {
   bars.speed.set(car.base.maxSpeed, 80, Math.round(car.base.maxSpeed * 3.6) + ' kph'); bars.accel.set(car.base.accel, 40); bars.grip.set(car.base.grip, 1.6, car.base.grip.toFixed(2)); bars.armor.set(car.base.armor, 200);
   const qBtns = QUALITY_ORDER.map((q) => button(q.toUpperCase(), () => { game.pbr?.setQuality(q); sync(); }, 'btn-q'));
   const sync = () => qBtns.forEach((b, i) => b.classList.toggle('btn-primary', game.pbr && game.pbr.qualityName === QUALITY_ORDER[i]));
-  const enemies = SLICE_FIELD.map((f) => { const d = getDriver(f.id); return h('div.sg-enemy', h('i', { style: { background: paletteHex(f.color) } }), h('span', `${d.name} #${f.number}`), h('em', d.favoriteWeapon.toUpperCase())); });
+  const enemies = SLICE_FIELD.map((f) => { const d = getDriver(f.id); return h('div.sg-enemy', h('i', { style: { background: uiHex(f.color) } }), h('span', `${d.name} #${f.number}`), h('em', d.favoriteWeapon.toUpperCase())); });
   let detach = null;
   const el = h('section.screen.screen-slice-garage',
     h('div.sg-panel.panel', h('h1.logo', h('span', 'LAST'), h('span.alt', 'TRACK')), h('p.tag', 'HERO SLICE'),

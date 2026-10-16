@@ -33,7 +33,7 @@ test('engine: gears shift up through the range, redline respected, torque curve 
   const seen = new Set();
   for (let i = 0; i < 120 * 30; i++) { stepBody(b, { throttle: 1, brake: 0, steer: 0 }, DT); seen.add(b.gear); assert.ok(b.rpm <= 1.06 && b.rpm >= TUNING.idleRpm - 1e-9); }
   assert.deepEqual([...seen].sort(), [1, 2, 3, 4, 5]);
-  assert.ok(b.speed <= STATS.maxSpeed * 1.01 && b.speed > STATS.maxSpeed * 0.9, `top ${b.speed}`);
+  assert.ok(b.speed <= STATS.maxSpeed * 1.08 && b.speed > STATS.maxSpeed * 0.9, `top ${b.speed}`);   // straight-line boost adds up to +7.5 %
   assert.ok(torqueCurve(0.6) > torqueCurve(0.1) && torqueCurve(0.6) > torqueCurve(1));
   const lo = gearFor(10, 56, 1), hi = gearFor(50, 56, 1);
   assert.ok(hi.gear > lo.gear);
@@ -64,12 +64,16 @@ test('braking while turning gives less cornering than coasting (friction circle)
   assert.ok(hb.slip > free.slip);
 });
 
-test('oversteer: rear stepping out produces extra yaw in the slide direction', () => {
+test('arcade slide recovery: a car stepping out is pulled straight again by itself (no driver input)', () => {
   const b = cruise(30);
   b.w = 12; b.vy = 12;
-  const before = b.yawRate;
+  const beta0 = Math.abs(Math.atan2(b.w, b.u));
   run(b, { throttle: 0.5, steer: 0 }, 0.2);
-  assert.ok(b.yawRate < before - 0.05, `yaw ${b.yawRate}`);   // w>0 (sliding right) -> nose rotates left (negative yaw)
+  assert.ok(Math.abs(b.yawRate) > 0.05, 'the assist is turning the nose');
+  assert.ok(Math.sign(b.yawRate) === 1, `nose rotates toward the direction of travel (w>0 -> yaw right), yaw ${b.yawRate}`);
+  run(b, { throttle: 0.5, steer: 0 }, 1.5);
+  const beta1 = Math.abs(Math.atan2(b.w, Math.abs(b.u)));
+  assert.ok(beta1 < beta0 * 0.2, `slip ${beta0.toFixed(2)} -> ${beta1.toFixed(2)}`);
 });
 
 test('wheelspin on a standing start with traction loss on low grip', () => {
