@@ -331,6 +331,10 @@ html.touch .tc, body.touch .tc { display: flex; }
 .np-row{display:flex;align-items:center;gap:5px;padding:2px 9px;border-radius:3px;background:rgba(6,10,18,.62);border-left:2px solid var(--acc);backdrop-filter:blur(3px)}
 .np-name{font:700 12px/1.1 'Rajdhani','Segoe UI',system-ui,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--acc);text-shadow:0 0 6px rgba(0,0,0,.9),0 1px 2px #000;white-space:nowrap}
 .np-skull{display:none;color:#ff5a4a;line-height:0}
+/* status face on each plate, coloured like the standings faces */
+.np-face{display:inline-flex;flex:none;line-height:0;color:#5dff9d;filter:drop-shadow(0 0 3px currentColor)}
+.np-face.hurt{color:#ffb02e}.np-face.burn{color:#ff4466}.np-face.dead{color:#8da4bd}.np-face.fin{color:#ff3df0}
+.np-face-svg{display:block;width:14px;height:14px;stroke-width:2.4}
 .np.dead .np-skull{display:inline-block}.np.dead .np-name{color:#aab;opacity:.75}
 .np-bar{width:92px;height:4px;border-radius:2px;background:rgba(0,0,0,.6);box-shadow:0 0 0 1px rgba(255,255,255,.14);overflow:hidden}
 .np-fill{height:100%;width:100%;transition:width .12s linear}

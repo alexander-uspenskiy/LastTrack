@@ -58,7 +58,7 @@ export function coracerFace(car) {
   if (car.armorMax > 0 && car.armor / car.armorMax < 0.35) return 'hurt';
   return 'ok';
 }
-const FACE_ICON = { ok: 'faceOk', hurt: 'faceHurt', burn: 'faceBurn', dead: 'faceDead', fin: 'faceFin' };
+export const FACE_ICON = { ok: 'faceOk', hurt: 'faceHurt', burn: 'faceBurn', dead: 'faceDead', fin: 'faceFin' };
 /** Pure: a co-racer's armour as the status list shows it: pct 0..1, and the label (FIN, OUT or the percentage). */
 export function rivalHealth(car) {
   const pct = car.armorMax > 0 ? Math.min(1, Math.max(0, car.armor / car.armorMax)) : 0;
