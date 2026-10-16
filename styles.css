@@ -308,14 +308,7 @@ body.no-hints .keys { display: none; }
 @keyframes pop { from { transform: scale(.6); opacity: 0; } to { transform: none; opacity: 1; } }
 
 /* ---------- slice garage ---------- */
-.screen-slice-garage { background: transparent; pointer-events: none; display: flex; align-items: stretch; justify-content: flex-start; padding: 0; }
-.screen-slice-garage .sg-panel { pointer-events: auto; margin: 24px; width: min(340px, 90vw); max-height: calc(100vh - 48px); overflow: auto; }
-.sg-car { color: var(--amber); letter-spacing: .2em; margin: 8px 0 4px; }
-.sg-enemy { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 3px 0; } .sg-enemy i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; } .sg-enemy em { margin-left: auto; opacity: .6; font-style: normal; font-size: 11px; }
-.btn-start { width: 100%; margin: 14px 0 6px; }
 .btn-q { padding: 2px 10px; }
-.sg-panel .logo { font-size: 40px; }
-.sg-panel h3 { margin-top: 10px; font-size: 12px; color: var(--cyan); letter-spacing: .24em; }
 
 .fatal { position: absolute; top: 20%; left: 50%; transform: translateX(-50%); max-width: 520px; z-index: 30; }
 .fatal h2 { margin-bottom: 8px; color: var(--red); }
@@ -359,3 +352,23 @@ body.no-hints .keys { display: none; }
 /* readability scrim behind the title copy */
 .screen-title::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: -1; background: linear-gradient(90deg, rgba(3, 5, 10, .88) 0%, rgba(3, 5, 10, .6) 34%, transparent 62%); }
 .screen-cars::before, .screen-garage::before, .screen-shop::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: -1; background: linear-gradient(180deg, rgba(3, 5, 10, .55) 0, transparent 22%, transparent 78%, rgba(3, 5, 10, .6) 100%); }
+/* shop: keep the right ~60% for the armory so the 3D garage car stays visible on the left */
+.screen-shop .shop-main { align-self: flex-end; margin-left: auto; width: min(980px, 62vw); }
+.screen-shop .shop-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* paint & decals */
+.screen-paint .paint-main { align-self: flex-end; margin-left: auto; width: min(560px, 92vw); max-height: calc(100% - 190px); overflow: auto; }
+.swatches { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
+.swatch { width: 34px; height: 34px; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); background: radial-gradient(circle at 32% 28%, rgba(255,255,255,.55), var(--sw) 55%, #000 130%); cursor: pointer; padding: 0; }
+.swatch.on { border-color: #35e6ff; box-shadow: 0 0 0 2px #05121c, 0 0 14px #35e6ff; transform: scale(1.1); }
+.swatches.mini .swatch { width: 22px; height: 22px; }
+.decal-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin: 6px 0 10px; }
+.decal-tile { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 8px; border: 1px solid rgba(53,230,255,.25); background: rgba(5,18,28,.6); color: #cfe; cursor: pointer; font: inherit; }
+.decal-tile small { font-size: 10px; text-align: center; line-height: 1.1; } .decal-tile em { font-style: normal; font-size: 11px; color: #ffb02e; }
+.decal-tile.owned em { color: #7dff6a; } .decal-tile.poor { opacity: .5; } .decal-tile:hover { border-color: #35e6ff; }
+.placed-list { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0; }
+.placed-row { display: flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 8px; border: 1px solid rgba(255,61,240,.35); background: rgba(20,5,25,.6); color: #fde; cursor: pointer; font: inherit; font-size: 12px; }
+.placed-row.on { border-color: #ff3df0; box-shadow: 0 0 10px #ff3df0; }
+.decal-editor { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; } .slider { display: flex; align-items: center; gap: 10px; font-size: 11px; letter-spacing: .12em; } .slider input { flex: 1; }
+.row.wrap { flex-wrap: wrap; gap: 6px; } .num-input { width: 64px; font: inherit; font-size: 22px; text-align: center; background: rgba(5,18,28,.8); color: #e8f4ff; border: 1px solid #35e6ff; border-radius: 8px; padding: 4px; }
+.livery-strip { display: flex; align-items: center; gap: 6px; margin: 4px 0; font-size: 12px; } .livery-strip i { width: 14px; height: 14px; border-radius: 50%; display: inline-block; border: 1px solid rgba(255,255,255,.4); }
+.livery-strip .dchip { padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,.08); font-size: 11px; }

@@ -1,5 +1,5 @@
 import { h, button, screenHeader, fmtMoney, fmtTime, attachMenuKeys, clear } from '../dom.js';
-import { TRACKS } from '../../data/tracks/index.js';
+import { GAME_TRACKS as TRACKS } from '../../data/tracks/index.js';
 import { icon } from '../icons.js';
 import { trackOutlinePath, difficultyOf, difficultyLabel } from '../menuLogic.js';
 
@@ -24,7 +24,7 @@ export function createTrackSelectScreen({ game, flow }) {
     clear(list);
     let nOpen = 0;
     TRACKS.forEach((t, i) => {
-      const open = save.unlockedTracks.includes(t.id);
+      const open = i === 0 || save.unlockedTracks.includes(t.id);
       if (open) nOpen++;
       const go = () => { game.setRaceSetup({ trackId: t.id }); flow.transition('raceSettings'); };
       const b = button(open ? 'SELECT' : 'LOCKED', go, open ? 'btn-primary' : '');

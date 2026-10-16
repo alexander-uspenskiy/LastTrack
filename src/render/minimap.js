@@ -37,7 +37,7 @@ export function createMinimap(canvas, track) {
     for (const c of order) {
       const x = c.x * tf.scale + tf.ox, y = c.y * tf.scale + tf.oy, r = c.isPlayer ? 5 : 3.5;
       if (c.wrecked) { ctx.strokeStyle = MODERN_HEX[8]; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x - 3, y - 3); ctx.lineTo(x + 3, y + 3); ctx.moveTo(x + 3, y - 3); ctx.lineTo(x - 3, y + 3); ctx.stroke(); continue; }
-      ctx.fillStyle = MODERN_HEX[c.isPlayer ? 7 : (c.color ?? 8) % 16]; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+      ctx.fillStyle = c.isPlayer ? MODERN_HEX[7] : c.livery ? '#' + (c.livery.paintHex >>> 0).toString(16).padStart(6, '0') : MODERN_HEX[(c.color ?? 8) % 16]; ctx.fillRect(x - r, y - r, r * 2, r * 2);
       ctx.strokeStyle = MODERN_HEX[0]; ctx.lineWidth = 1; ctx.strokeRect(x - r, y - r, r * 2, r * 2);
     }
   }

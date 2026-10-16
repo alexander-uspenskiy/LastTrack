@@ -2,15 +2,15 @@
 import { h, attachMenuKeys, fmtMoney } from '../dom.js';
 import { icon } from '../icons.js';
 import { getCar } from '../../data/cars.js';
-import { TRACKS } from '../../data/tracks/index.js';
+import { GAME_TRACKS } from '../../data/tracks/index.js';
 import { VERSION } from '../../version.js';
 
 /** Pure: one-line save summary for the Continue button. */
 export function saveSummary(save) {
   if (!save) return '';
   const car = getCar(save.carId);
-  const open = (save.unlockedTracks || []).length;
-  return `${fmtMoney(save.cash)} · ${car ? car.name : 'No car'} · ${open}/${TRACKS.length} tracks`;
+  const open = GAME_TRACKS.filter((t, i) => i === 0 || (save.unlockedTracks || []).includes(t.id)).length;
+  return `${fmtMoney(save.cash)} · ${car ? car.name : 'No car'} · ${open}/${GAME_TRACKS.length} tracks`;
 }
 
 function menuButton(label, sub, onClick, cls = '', key = '') {
@@ -20,19 +20,14 @@ function menuButton(label, sub, onClick, cls = '', key = '') {
 }
 
 export function createTitleScreen({ game, flow, openSettings }) {
-  const slice = !!game.slice;
   const cont = menuButton('CONTINUE', '', () => flow.transition('garage'), 'btn-primary btn-continue');
   const ng = menuButton('NEW GAME', 'Pick a car, start with $5,000', () => {
     if (game.hasSavedGame() && !confirm('Start over? Your current save will be erased.')) return;
     game.newGame();
     flow.transition('carSelect');
   }, 'btn-new');
-  const heroBtn = menuButton(slice ? 'START — HAMMER × NEON LOOP' : 'HERO SLICE', slice ? 'Photoreal showcase race' : 'Photoreal Hammer · Neon Loop', () => {
-    if (slice) game.startSlice(); else location.search = '?slice=1';
-  }, slice ? 'btn-primary btn-hero' : 'btn-hero');
-  const fullBtn = menuButton('FULL GAME', 'Back to the full campaign', () => { location.search = ''; }, 'btn-full');
   const setBtn = menuButton('SETTINGS', 'Graphics · audio · controls', () => openSettings(), 'btn-settings');
-  const menu = h('nav.menu', { 'aria-label': 'Main menu' }, ...(slice ? [heroBtn, fullBtn, setBtn] : [cont, ng, heroBtn, setBtn]));
+  const menu = h('nav.menu', { 'aria-label': 'Main menu' }, cont, ng, setBtn);
   const keys = h('p.keys',
     ...[['WASD', 'drive'], ['SPACE', 'fire'], ['E', 'weapon'], ['1-4', 'select'], ['SHIFT', 'drift'], ['C', 'camera'], ['P', 'pause'], ['M', 'mute']].map(([k, t]) => h('span', h('kbd', k), t)),
     h('span', h('kbd', '↑↓←→'), 'menus'), h('span', h('kbd', 'GAMEPAD'), 'supported'));
@@ -40,7 +35,7 @@ export function createTitleScreen({ game, flow, openSettings }) {
     h('div.title-main',
       h('div.eyebrow', 'Vehicular combat league'),
       h('h1.logo', { 'aria-label': 'Last Track' }, h('span', 'LAST'), h('span.alt', 'TRACK')),
-      h('p.tag', slice ? 'Hero slice — Hammer · Neon Loop' : 'Race for money. Race for your life.'),
+      h('p.tag', 'Race for money. Race for your life.'),
       menu),
     h('div.title-foot', keys, h('span.ver', `v${VERSION} · three.js`)));
   let detach = null;
@@ -48,7 +43,6 @@ export function createTitleScreen({ game, flow, openSettings }) {
     el,
     show() {
       detach = attachMenuKeys(el);
-      if (slice) return;
       const saved = game.hasSavedGame();
       cont.disabled = !saved;
       cont.classList.toggle('btn-primary', saved);

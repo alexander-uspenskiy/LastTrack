@@ -43,8 +43,8 @@ export function createRaceSim(config, opts = {}) {
   const nextId = () => idCounter++;
 
   // ---- cars
-  const entries = [{ isPlayer: true, stats: config.player.stats, armor: config.player.armor, loadout: config.player.loadout, driverId: 'player', carId: config.player.carId }];
-  for (const r of config.rivals || []) entries.push({ isPlayer: false, stats: r.stats, armor: r.stats.armor, loadout: r.loadout, driverId: r.driverId, skill: r.skill, aggression: r.aggression, favoriteWeapon: r.favoriteWeapon, color: r.color, hunt: !!r.hunt });
+  const entries = [{ isPlayer: true, stats: config.player.stats, armor: config.player.armor, loadout: config.player.loadout, driverId: 'player', carId: config.player.carId, livery: config.player.livery || null }];
+  for (const r of config.rivals || []) entries.push({ isPlayer: false, stats: r.stats, armor: r.stats.armor, loadout: r.loadout, driverId: r.driverId, skill: r.skill, aggression: r.aggression, favoriteWeapon: r.favoriteWeapon, color: r.color, hunt: !!r.hunt, livery: r.livery || null });
   const grid = track.startGrid(entries.length);
   const cars = entries.map((e, i) => {
     const car = createCarBody(grid[i], e.stats);
@@ -57,6 +57,7 @@ export function createRaceSim(config, opts = {}) {
     initDamage(car, e.stats.armor ?? 60, e.armor);
     car.partsLost = [];
     initWeapons(car, e.loadout);
+    car.livery = e.livery || null;
     car.kills = 0; car.bumpCd = 0; car.cash = 0; car.rank = i + 1;
     car.proj = track.project(car.x, car.y);
     initRecovery(car); car.scrapeCd = 0; car.wallT = -9;
@@ -256,7 +257,7 @@ export function createRaceSim(config, opts = {}) {
         armor: c.armor, armorMax: c.armorMax, wrecked: c.wrecked, wreckT: c.wrecked ? c.wreckTimer : 0, smoke: isSmoking(c), burning: isBurning(c), tyresPopped: c.tyreTimer > 0, oiled: c.oilTimer > 0,
         lap: director.lapOf(c), s: director.sOf(c), position: c.rank, finished: c.finished, finishTime: c.finishTime, kills: c.kills,
         weapons: c.weapons.map((w) => ({ id: w.id, ammo: w.ammo })), activeWeapon: c.activeWeapon, firing: c.firing,
-        color: c.color, helmetColor: c.helmetColor,
+        color: c.color, helmetColor: c.helmetColor, livery: c.livery,
         gear: c.gear, rpm: c.rpm, limiter: c.limiter, shifted: c.shifted, ax: c.ax, ay: c.ay, load: c.load, slip: c.slip,
         wheelspin: c.wheelspin, braking: c.braking, surface: c.surface, throttle: c.throttleIn ?? 0,
         dmg: c.dmgMap ? c.dmgMap.slice() : null,

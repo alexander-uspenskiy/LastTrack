@@ -4,7 +4,7 @@
 
 **[▶ Play it now: alexander-uspenskiy.github.io/lastrack](https://alexander-uspenskiy.github.io/lastrack/)**
 
-A browser vehicular-combat racer inspired by the 1990s *Deathtrack*: race rival drivers for money (and your life), buy armor, engine, tyres and weapons — machine guns, rockets, caltrops, mines, oil, flamethrowers and terminator missiles — across 10 tracks.
+A browser vehicular-combat racer inspired by the 1990s *Deathtrack*, in photoreal PBR: pick one of three procedurally built cars (Wasp interceptor, Hammer muscle car, Bulwark juggernaut), race five rivals drawn from eight drivers on the wet, neon-lit Neon Loop and Foundry Run, and spend the winnings on armor, engine, tyres, repairs and eight weapons — machine guns, rockets, caltrops, mines, oil, flamethrowers, terminator missiles and a ram plate. Weapons are fixed forward, so line the shot up. Pick one of 12 clearcoat paints, an underglow colour and a racing number in the garage, and buy up to six procedural decals (skulls, flames, wings…) for the hood, doors, roof and trunk.
 
 Neon Holo UI, live 3D showroom menus, PBR lighting and a vector HUD — all generated in code, no external assets or fonts.
 
@@ -19,12 +19,12 @@ Built with [three.js](https://threejs.org) (vendored, r170) and vanilla ES modul
 | ![In-race HUD](docs/images/race-hud.jpg) | |
 
 - **Play:** https://alexander-uspenskiy.github.io/lastrack/
-- **Hero Slice** (photoreal, futuristic Hammer vs 4 enemy Hammers on the Neon Loop test track): https://alexander-uspenskiy.github.io/lastrack/?slice=1 (`&q=low|med|high` for quality)
+- Graphics quality: `?q=low|med|high` (or `G` in a race). `?slice=1` is kept as an alias of the normal game.
 
 ## Run locally
 ```bash
 npm install
-npm run serve   # http://localhost:8000
+npm run serve   # http://localhost:8123
 npm test
 ```
 

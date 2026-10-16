@@ -1,5 +1,5 @@
 import { h, button, screenHeader, fmtMoney, attachMenuKeys } from '../dom.js';
-import { getTrack, TRACKS } from '../../data/tracks/index.js';
+import { getTrack, GAME_TRACKS as TRACKS } from '../../data/tracks/index.js';
 import { outlineSvg, diffPips } from './trackSelect.js';
 import { difficultyOf, difficultyLabel } from '../menuLogic.js';
 

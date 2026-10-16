@@ -42,9 +42,10 @@ gr.addColorStop(0, '#3a4048'); gr.addColorStop(0.55, '#1a1e24'); gr.addColorStop
 const ft = new THREE.CanvasTexture(fc); ft.colorSpace = THREE.SRGBColorSpace;
 const floor = new THREE.Mesh(new THREE.CircleGeometry(40, 64).rotateX(-Math.PI / 2), new THREE.MeshPhysicalMaterial({ map: ft, metalness: 0.7, roughness: 0.22, clearcoat: 0.5, envMapIntensity: 0.8 }));
 floor.receiveShadow = true; scene.add(floor);
-const car = buildHeroCarPBR({ color: new THREE.Color(Q.get('paint') ? '#' + Q.get('paint') : '#c8501a').getHex() }); scene.add(car);
+const car = buildHeroCarPBR({ carId: Q.get("car") || "hammer", color: new THREE.Color(Q.get("paint") ? "#" + Q.get("paint") : ({ wasp: "#c4122e", bulwark: "#3a7d4a" }[Q.get("car")] || "#c8501a")).getHex() }); scene.add(car);
 car.traverse((o) => { if (o.isMesh && ['glass', 'gaps', 'interior', 'displays', 'underglow-decal'].includes(o.name)) o.castShadow = false; });
 const hero = car.userData.hero;
+if (Q.has('decals')) { const { getPaint } = await import('../src/data/liveries.js'); const P = getPaint(Q.get('paint2') || 'electric-cyan'); hero.setLivery({ paint: P.id, paintHex: P.hex, accentHex: 0xff3df0, number: '42', decals: [{ id: 'flaming-skull', zone: 'hood', tint: 'pearl-white', scale: 1.1, rot: 0, mirror: false }, { id: 'bolt', zone: 'doorR', tint: 'stealth-black', scale: 1.2, rot: 0, mirror: false }, { id: 'bolt', zone: 'doorL', tint: 'stealth-black', scale: 1.2, rot: 0, mirror: false }, { id: 'star', zone: 'roof', tint: 'solar-orange', scale: 1, rot: 0, mirror: false }, { id: 'wings', zone: 'trunk', tint: 'magenta', scale: 1, rot: 0, mirror: false }] }); }
 const st = { speed: 0, steer: +(Q.get('steer') || 0), ax: 0, ay: 0, throttle: 0, braking: 0, frac: 1, dmg: [0, 0, 0, 0], wrecked: false, firing: false, aim: 0.25, wet: +(Q.get('wet') || 0), dirt: +(Q.get('dirt') || 0) };
 let stage = +(Q.get('stage') || 0), spin = Q.get('spin') !== '0', yaw = 0.6, camYaw = 0.55, camPitch = 0.16, camDist = 8.2, view = Q.get('view') || 'q34', t = 0;
 function setStage(s) { stage = s; const m = [[1, 0], [0.55, 0.35], [0.25, 0.75], [0.1, 1], [0, 1]][s]; st.frac = m[0]; st.dmg = [m[1], m[1] * 0.45, m[1] * 0.7, m[1] * 0.3]; st.wrecked = s === 4; }

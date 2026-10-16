@@ -1,22 +1,24 @@
-// Headless check of the hero slice: Neon Loop, player Hammer (AI-driven) vs 4 enemy Hammers. Usage: node tools/sliceCheck.mjs [seeds=4] [playerSkill=0.85]
+// Headless check of the game: 6 cars (AI-driven player + 5 drawn enemies) on every track and with every player car.
+// Usage: node tools/sliceCheck.mjs [seeds=3] [playerSkill=0.85]
 import { createRaceSim } from '../src/sim/raceSim.js';
-import { createSliceConfig } from '../src/data/sliceConfig.js';
+import { createGameConfig } from '../src/data/sliceConfig.js';
 import { defaultSave } from '../src/data/saveStore.js';
-const seeds = +process.argv[2] || 4, pskill = +process.argv[3] || 0.85;
+import { GAME_TRACKS } from '../src/data/tracks/index.js';
+import { CARS } from '../src/data/cars.js';
+const seeds = +process.argv[2] || 3, pskill = +process.argv[3] || 0.85;
 const NO = { throttle: 0, brake: 0, steer: 0, fire: false, cycleWeapon: false, selectWeapon: null, handbrake: false };
-const tot = { shots: {}, hits: {}, wrecks: 0, finish: 0, n: 0, dnf: 0, winT: [] };
-for (let s = 0; s < seeds; s++) {
-  const save = { ...defaultSave(), carId: 'hammer', weapons: [{ id: 'machinegun', ammo: 200 }] };
-  const sim = createRaceSim(createSliceConfig({ save, seed: 500 + s }), { aiPlayer: true, aiSkill: pskill });
-  sim.events.on('shot', (e) => { tot.shots[e.carId] = (tot.shots[e.carId] || 0) + 1; });
-  sim.events.on('hit', (e) => { if (e.byId != null && e.byId !== e.carId && e.weaponId !== 'wall' && e.weaponId !== 'ram') tot.hits[e.byId] = (tot.hits[e.byId] || 0) + 1; });
-  sim.events.on('wreck', () => { tot.wrecks++; });
-  let n = 0; while (!sim.isOver() && n++ < 120 * 600) sim.step(NO);
-  const r = sim.result(); tot.n++;
-  tot.finish += r.finishOrder.filter((f) => f.time != null).length; tot.dnf += r.finishOrder.filter((f) => f.time == null).length;
-  const w = r.finishOrder[0]; if (w.time) tot.winT.push(w.time);
-  console.log(`seed ${s}: ${r.finishOrder.map((f) => (f.isPlayer ? 'P' : f.driverId) + (f.time ? ' ' + f.time.toFixed(0) + 's' : f.wrecked ? ' WRECK' : ' DNF')).join(' | ')}  sim ${(n / 120).toFixed(0)}s`);
+for (const tr of GAME_TRACKS) for (const car of CARS) {
+  const agg = { n: 0, fin: 0, wr: 0, shots: 0, hits: 0, win: 0, pos: 0, sim: 0, cars: new Set() };
+  for (let s = 0; s < seeds; s++) {
+    const save = { ...defaultSave(), carId: car.id, weapons: car.startWeapons.map((w) => ({ ...w })) };
+    const cfg = createGameConfig({ trackId: tr.id, save, seed: 700 + s });
+    cfg.rivals.forEach((r) => agg.cars.add(r.carId));
+    const sim = createRaceSim(cfg, { aiPlayer: true, aiSkill: pskill });
+    sim.events.on('shot', (e) => { if (e.carId > 0) agg.shots++; });
+    sim.events.on('hit', (e) => { if (e.byId > 0 && e.weaponId !== 'wall' && e.weaponId !== 'ram' && e.weaponId !== 'flamethrower') agg.hits++; });
+    let n = 0; while (!sim.isOver() && n++ < 120 * 600) sim.step(NO);
+    const r = sim.result(); agg.n++; agg.sim += n / 120; agg.fin += r.finishOrder.filter((f) => f.time != null).length; agg.wr += r.finishOrder.filter((f) => f.wrecked).length;
+    agg.win += r.finishOrder[0].time || 0; agg.pos += r.player.position;
+  }
+  console.log(`${tr.id.padEnd(8)} player ${car.id.padEnd(7)} 6 cars: finishers ${(agg.fin / agg.n).toFixed(1)}/6 wrecks ${(agg.wr / agg.n).toFixed(1)} winner ${(agg.win / agg.n).toFixed(0)}s playerPos ${(agg.pos / agg.n).toFixed(1)} enemy shots ${(agg.shots / agg.n).toFixed(0)} hits ${(agg.hits / agg.n).toFixed(0)} enemyCars ${[...agg.cars].join('/')}`);
 }
-console.log('track length', createRaceSim(createSliceConfig({ save: defaultSave(), seed: 1 }), {}).track.length.toFixed(0), 'm');
-console.log('shots by car', JSON.stringify(tot.shots), 'hits by car', JSON.stringify(tot.hits));
-console.log(`finishers ${tot.finish}/${tot.n * 5}  dnf ${tot.dnf}  wrecks ${tot.wrecks}  avg win time ${(tot.winT.reduce((a, b) => a + b, 0) / Math.max(1, tot.winT.length)).toFixed(0)}s`);

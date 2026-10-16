@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { MeshBuilder, colorRGB, wrapAngle, disposeObject } from './geomUtil.js';
 import { COLOR as K } from './paletteRef.js';
+import { carMuzzle } from './pbr/heroCarPBR.js';
 import { createDebris, chunkCount } from './debris.js';
 import { mulberry32 } from '../core/mathUtil.js';
 
@@ -156,6 +157,7 @@ export function createEffects(parent, { skid = true, soft = false } = {}) {
   parent.add(root);
   const parts = new ParticlePool(2000, soft);
   const skids = new SkidMarks(skid ? 900 : 4);
+  const carIds = [];   // car id -> 'hammer' | 'wasp' | 'bulwark' (set by the race controller; picks the muzzle position)
   root.add(parts.points, skids.mesh);
 
   // tracers
@@ -313,10 +315,10 @@ export function createEffects(parent, { skid = true, soft = false } = {}) {
         if (ev.weaponId === 'machinegun') {
           const cc = Math.cos(p.heading + (soft ? 0 : sp)), ss = Math.sin(p.heading + (soft ? 0 : sp));
           if (soft) {                                  // PBR Hammer: twin barrels on the roof, straight along the heading
-            const side = (ev.tick ?? snap.tick) % 2 ? 0.14 : -0.14, ox = p.x + c * 1.45 - s * side, oz = p.y + s * 1.45 + c * side;
-            addTracer(ox, oz, c, s, 80, 1.77);
-            parts.emit(ox, 1.77, oz, c * 8, 0.2, s * 8, 0.07, 1.4, 0, K.yellow);
-            parts.emit(ox, 1.77, oz, c * 4, 0.2, s * 4, 0.05, 0.9, 0, K.white);
+            const mz = carMuzzle(carIds[car.id] || 'hammer'), side = mz.zs[((ev.tick ?? snap.tick) | 0) % mz.zs.length], ox = p.x + c * mz.x - s * side, oz = p.y + s * mz.x + c * side;
+            addTracer(ox, oz, c, s, 80, mz.y);
+            parts.emit(ox, mz.y, oz, c * 8, 0.2, s * 8, 0.07, 1.4, 0, K.yellow);
+            parts.emit(ox, mz.y, oz, c * 4, 0.2, s * 4, 0.05, 0.9, 0, K.white);
           } else {
           addTracer(p.x + c * 2.2, p.y + s * 2.2, cc, ss, 80);
           parts.emit(p.x + c * 2.4, 0.7, p.y + s * 2.4, c * 8, 0.5, s * 8, 0.07, 1.1, 0, K.yellow);
@@ -578,5 +580,5 @@ export function createEffects(parent, { skid = true, soft = false } = {}) {
     lit.dispose(); trMat.dispose(); [lampOn, lampOff, lampArmed, ...puddleMats].forEach((m) => m.dispose()); 
     disposeObject(root);
   }
-  return { group: root, particles: parts, skids, debris, handleEvents, update, dispose, wrapAngle, explode };
+  return { group: root, particles: parts, skids, debris, handleEvents, update, dispose, wrapAngle, explode, carIds };
 }

@@ -135,9 +135,7 @@ export function createMenuScene(host, { canvas = null } = {}) {
     const { carId = 'hammer', color = 9, upgrades = null, helmetColor = 10 } = spec;
     lastSpec = spec;
     disposeCar();
-    if (carId === 'hammer') {
-      try { car = buildHeroCarPBR({ color: PBR_PALETTE(color), accent: 0x35e6ff }); hero = car.userData.hero || null; } catch (e) { car = null; }
-    }
+    try { car = buildHeroCarPBR({ carId, color: PBR_PALETTE(color), accent: 0x35e6ff, livery: spec.livery || null }); hero = car.userData.hero || null; } catch (e) { car = null; }
     if (!car) car = buildCarMesh({ carId, color, helmetColor, upgrades });
     car.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.isInstancedMesh) o.frustumCulled = false; } });
     turn.add(car);
@@ -168,7 +166,12 @@ export function createMenuScene(host, { canvas = null } = {}) {
   const onWheel = (e) => { dist = Math.max(0.65, Math.min(1.5, dist + e.deltaY * 0.0008)); };
   const api = {
     get shown() { return shown; }, get car() { return car; }, get mode() { return mode; }, get lite() { return lite; },
-    setCar, setParallax(x, y) { tpx = x; tpy = y; },
+    setCar, setLivery(l) {
+      if (!hero) return;
+      lastSpec = { ...(lastSpec || {}), livery: { ...((lastSpec && lastSpec.livery) || {}), ...l } };
+      hero.setLivery(l);
+      if (mirror && car.getObjectByName('roof-decal') && !mirror.getObjectByName('roof-decal')) setCar(lastSpec);   // a roof decal mesh appeared: rebuild the reflection copy
+    }, setParallax(x, y) { tpx = x; tpy = y; },
     setMode(m, o = {}) { mode = m; if (o.side !== undefined) side = o.side; },
     setQuality(name) {
       const low = name === 'low';

@@ -10,7 +10,7 @@ export function useStage(game, screenEl, { side = 1, mode = 'showcase' } = {}) {
       const st = game.stage;
       if (st) {
         st.setMode(mode, { side });
-        if (spec) st.setCar(spec);
+        if (spec) st.setCar(spec.livery || !game.liveryOf ? spec : { ...spec, livery: game.liveryOf(spec.carId) });
         return;
       }
       if (!spec) return;

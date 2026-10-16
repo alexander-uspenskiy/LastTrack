@@ -347,7 +347,7 @@ export function createHud({ root, getWeapon = (id) => ({ name: id }) } = {}) {
       if (board._k !== bkey) {
         board._k = bkey;
         setChildren(board, rows.map((c, i) => h('div.hud-row' + (c.isPlayer ? '.me' : '') + (c.wrecked ? '.dead' : '') + (c.finished ? '.fin' : ''),
-          h('b', String(c.position ?? i + 1)), h('i.hud-chip', { style: { background: carChip(c.color) } }), h('span', c.name))));
+          h('b', String(c.position ?? i + 1)), h('i.hud-chip', { style: { background: c.livery ? '#' + (c.livery.paintHex >>> 0).toString(16).padStart(6, '0') : carChip(c.color) } }), h('span', c.name))));
       }
 
       // --- events -> feed / toasts ---

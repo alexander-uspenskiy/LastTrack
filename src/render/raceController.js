@@ -70,7 +70,8 @@ export function createRaceController(host, track, config = {}) {
   const heroSky = !pbrMode && config.hero && track.id === 'scrapyard';
   const sky = heroSky || pbrMode ? new THREE.Group() : buildSky(theme); root.add(sky);
   const heroTrack = !pbrMode && config.hero && track.id === 'scrapyard' ? buildHeroTrack(track, { seed: config.seed }) : null;
-  const pbrTrack = pbrMode && track.id === 'neonloop' ? buildPbrTrack(track, { seed: 77 }) : null;
+  const look = (track.def && track.def.look) || {};
+  const pbrTrack = pbrMode && (track.def && (track.def.surfaces || track.id === 'neonloop')) && ['neonloop', 'foundry'].includes(track.id) ? buildPbrTrack(track, { seed: look.seed || 77 }) : null;
   const trackMesh = pbrTrack || heroTrack || buildTrackMesh(track); root.add(trackMesh.group);
   const scenery = heroTrack || pbrTrack ? { group: new THREE.Group(), dispose() {} } : buildScenery(track, { seed: config.seed }); root.add(scenery.group);
   let hemi, sun, keyLight = null, shadowsOn = false;
@@ -79,10 +80,10 @@ export function createRaceController(host, track, config = {}) {
   if (pbrMode) {
     // IBL (scene.environment, set by attachPBR) does the ambient; one shadow-casting key light follows the player; haze instead of palette fog
     hemi = new THREE.HemisphereLight(0x8a6a8a, 0x1a1418, 0.25);
-    keyLight = makeKeyLight(host.pbr ? host.pbr.quality : { shadowMap: 1024, shadowSoft: false }, { intensity: pbrTrack ? 1.5 : 3.4, area: 22, color: pbrTrack ? 0xffa27a : 0xffb98a });
-    if (pbrTrack) { scene.backgroundIntensity = 0.4; scene.environmentIntensity = 0.5 * (host.pbr ? host.pbr.quality.reflections : 1); }
+    keyLight = makeKeyLight(host.pbr ? host.pbr.quality : { shadowMap: 1024, shadowSoft: false }, { intensity: pbrTrack ? (look.keyIntensity ?? 1.5) : 3.4, area: 22, color: pbrTrack ? (look.key ?? 0xffa27a) : 0xffb98a });
+    if (pbrTrack) { scene.backgroundIntensity = look.bgIntensity ?? 0.4; scene.environmentIntensity = 0.5 * (host.pbr ? host.pbr.quality.reflections : 1); }
     root.add(hemi, keyLight, keyLight.target); sun = keyLight;
-    scene.fog = new THREE.FogExp2(pbrTrack ? 0x3a2640 : 0x5a3446, pbrTrack ? 0.0052 : 0.0042);
+    scene.fog = new THREE.FogExp2(pbrTrack ? (look.fog ?? 0x3a2640) : 0x5a3446, pbrTrack ? (look.fogDensity ?? 0.0052) : 0.0042);
     if (!pbrTrack) trackMesh.group.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
   } else if (heroTrack) {
     // retro hero art (?style=retro): original dusk lighting
@@ -126,7 +127,6 @@ export function createRaceController(host, track, config = {}) {
   const getPose = (id) => poses[id];
 
   function carIdFor(c) {
-    if (config.hero && config.heroStyle === 'pbr' && config.slice) return 'hammer';   // slice field is all Hammers
     if (c.isPlayer) return (config.player && config.player.carId) || 'wasp';
     const r = (config.rivals || []).find((x) => x.driverId === c.driverId);
     const d = getDriver(c.driverId || (r && r.driverId));
@@ -137,13 +137,14 @@ export function createRaceController(host, track, config = {}) {
     let e = entries[c.id];
     if (!e) {
       const carId = carIdFor(c);
-      const hero = config.hero && carId === 'hammer';
-      const pbrCar = hero && pbrMode;
-      e = { id: c.id, carId, hero, wet: 0.25, dirt: 0, wrecked: !!c.wrecked, lost: [], mesh: pbrCar ? buildHeroCarPBR({ color: PBR_PALETTE(c.color), accent: c.isPlayer ? 0x35e6ff : PBR_PALETTE.accent(c.color) }) : hero ? buildHeroCar({ color: c.color, helmetColor: c.helmetColor, number: String((c.id * 7 + 9) % 100) }) : buildCarMesh({ carId, color: c.color, helmetColor: c.helmetColor, wrecked: c.wrecked }), blob: new THREE.Mesh(blobGeo, blobMat) };
+      const pbrCar = pbrMode;
+      const hero = pbrCar || (config.hero && carId === 'hammer');
+      e = { id: c.id, carId, hero, wet: 0.25, dirt: 0, wrecked: !!c.wrecked, lost: [], mesh: pbrCar ? buildHeroCarPBR({ carId, color: PBR_PALETTE(c.color), accent: c.isPlayer ? 0x35e6ff : PBR_PALETTE.accent(c.color), livery: c.livery || null }) : hero ? buildHeroCar({ color: c.color, helmetColor: c.helmetColor, number: String((c.id * 7 + 9) % 100) }) : buildCarMesh({ carId, color: c.color, helmetColor: c.helmetColor, wrecked: c.wrecked }), blob: new THREE.Mesh(blobGeo, blobMat) };
       if (pbrCar) { e.blob.visible = false; e.mesh.traverse((o) => { if (o.isMesh) o.frustumCulled = o.isInstancedMesh ? false : o.frustumCulled; }); }
       if (!pbrCar && !hero) castShadows(e.mesh);
       carsGroup.add(e.mesh, e.blob);
       entries[c.id] = e;
+      effects.carIds[c.id] = carId;
     }
     if (!!c.wrecked !== e.wrecked && !e.hero) {
       carsGroup.remove(e.mesh); disposeObject(e.mesh);
@@ -269,7 +270,7 @@ export function createRaceController(host, track, config = {}) {
     heroTrack,
     CAMERA_MODES,
     minimapState() {
-      return { snapshot: last, bounds: trackMesh.bounds, cars: last ? last.cars.map((c) => ({ x: c.x, y: c.y, isPlayer: c.isPlayer, color: c.color, wrecked: c.wrecked })) : [] };
+      return { snapshot: last, bounds: trackMesh.bounds, cars: last ? last.cars.map((c) => ({ x: c.x, y: c.y, isPlayer: c.isPlayer, color: c.color, livery: c.livery, wrecked: c.wrecked })) : [] };
     },
     effects, rig,
     dispose() {

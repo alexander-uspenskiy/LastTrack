@@ -85,6 +85,7 @@ export function createGarageScreen({ game, flow }) {
     h('footer.screen-foot',
       button('MAIN MENU', () => flow.transition('title'), 'btn-back'),
       h('span.spacer'),
+      button('PAINT & DECALS', () => flow.transition('paint'), 'btn-nav-paint'),
       button('ARMORY', () => flow.transition('shop'), 'btn-nav-shop'),
       button('DRIVERS', () => flow.transition('roster'), 'btn-nav-roster'),
       button('TO THE TRACK', () => flow.transition('trackSelect'), 'btn-primary btn-nav-track')));
