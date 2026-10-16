@@ -15,7 +15,7 @@ test('palette', () => {
 });
 test('cars/weapons/drivers consistent', () => {
   assert.deepEqual(CARS.map((c) => c.id), ['wasp', 'hammer', 'bulwark']);
-  assert.deepEqual(WEAPONS.map((w) => w.id), ['machinegun', 'rocket', 'caltrops', 'terminator', 'mine', 'oil', 'flamethrower', 'ramplate']);
+  assert.deepEqual(WEAPONS.map((w) => w.id), ['machinegun', 'rocket', 'guided', 'caltrops', 'terminator', 'mine', 'oil', 'flamethrower', 'ramplate']);
   assert.deepEqual(DRIVERS.map((d) => d.id), ['vex', 'rust', 'fuse', 'kane', 'grave', 'slick', 'cinder', 'dolores']);
   assert.equal(getCar('nope'), null);
   for (const c of CARS) for (const w of c.startWeapons) assert.ok(getWeapon(w.id) && w.ammo <= getWeapon(w.id).maxAmmo);

@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/icons/icon-512.png" width="128" alt="Last Track icon"></p>
 
-# Last Track  <small>v0.2.0</small>
+# Last Track  <small>v0.3.0</small>
 
 **[▶ Play it now: alexander-uspenskiy.github.io/lastrack](https://alexander-uspenskiy.github.io/lastrack/)**
 

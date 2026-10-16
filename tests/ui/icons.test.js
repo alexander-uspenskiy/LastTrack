@@ -16,9 +16,9 @@ test('every weapon has a non-empty icon (24x24, valid path data)', () => {
     assert.ok(ic.paths.length >= 2, `${w.id} has paths`);
     for (const p of ic.paths) assert.match(p.d, /^M[\d\s.,MLHVCSQTAZmlhvcsqtaz-]+$/, `${w.id} path data`);
   }
-  assert.equal(Object.keys(WEAPON_ICONS).length, 8);
+  assert.equal(Object.keys(WEAPON_ICONS).length, 9);
   const sig = new Set(Object.values(WEAPON_ICONS).map((i) => i.paths.map((p) => p.d).join('|')));
-  assert.equal(sig.size, 8, 'weapon silhouettes are all distinct');
+  assert.equal(sig.size, 9, 'weapon silhouettes are all distinct');
 });
 
 test('UI glyph names resolve', () => {
