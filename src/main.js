@@ -31,7 +31,7 @@ try {
     storage = createMemoryStorage();
   }
   const { createGame } = await import('./game/game.js');
-  const game = createGame({ root, canvas, storage, slice, sliceStyle: params.get('style') === 'retro' ? 'retro' : 'pbr', quality: params.get('q') || undefined, onError: (m) => debug.pushError(m) });
+  const game = createGame({ root, canvas, storage, slice, sliceStyle: 'pbr', quality: params.get('q') || undefined, onError: (m) => debug.pushError(m) });
   debug.attach(game);
   window.addEventListener('pagehide', () => { try { game.dispose(); } catch { /* ignore */ } });
 } catch (e) {

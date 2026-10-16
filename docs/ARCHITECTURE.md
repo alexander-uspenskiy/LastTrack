@@ -170,7 +170,7 @@ Audio is fully procedural WebAudio (engine hum from player speed + RPM-like pitc
 - Performance: 60 fps with 5 cars, ≤ ~150 draw calls; reuse geometries/materials, pool particles.
 
 ## 9. Hero Slice (`?slice=1`) — extension, slice-only
-- `?slice=1` (title-screen "HERO SLICE" button) locks car = Hammer, track = Detroit Scrapyard, fresh in-memory save. Normal game untouched. `?q=low|med|high` (or `G` in race) = graphics quality; `?style=retro` = the earlier 16-colour hero art (`render/heroCar.js`, `heroTrack.js`, `heroTexture.js`).
+- `?slice=1` (title-screen "HERO SLICE" button) locks car = Hammer, track = Detroit Scrapyard, fresh in-memory save. Normal game untouched. `?q=low|med|high` (or `G` in race) = graphics quality.
 - Default slice art = **PBR**: `render/pbr/` — `carBody.js` (lofted smooth body, canopy, dents), `heroCarPBR.js` (materials, wheels, turret, lights, suspension, damage, wet/dirt), `maps.js` (procedural normal/roughness/carbon/tread), `env.js` (HDR IBL), `post.js` (HDR RT, SSAO, bloom, motion blur, ACES), `pbrHost.js` (`attachPBR(host,{quality,env})`, key light + shadows), `quality.js`.
 - Showroom: `tools/showroom.html?q=high&view=q34&stage=0..4&wet=&dirt=&env=showroom|dusk`.
 - Sim additions (all modes): `carPhysics.js` engine/gears/limiter, friction-limited braking, weight transfer, slip curve, oversteer; `surfaces.js`; per-zone damage `dmgMap`; snapshot gains `gear rpm ax ay load slip wheelspin braking surface throttle limiter shifted dmg`. Player wreck no longer ends the race (20 s spectate, `WRECK_SPECTATE`).
