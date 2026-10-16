@@ -42,6 +42,36 @@ export const FOUNDRY_RUN = {
     dirt: [],
   },
 };
-export const SLICE_TRACKS = [NEON_LOOP, FOUNDRY_RUN];
+/**
+ * Daylite: a sunset in red dust on the lower Manhattan waterfront. The quay straight runs along the harbour (east); the towers
+ * stand in haze on the land side (west), and the Statue of Liberty stands out on her island in the water.
+ * Sun behind the city (= sunDir(DUST_SUN_ELEV) in render/pbr/env.js), so the statue is backlit and the road shadows fall to the water.
+ */
+export const DAYLITE = {
+  id: 'daylite', name: 'Daylite', city: 'New York',
+  blurb: 'Last light through red dust. The quay straight runs along the harbour, and the Lady watches from her island.',
+  laps: 3, prize: 8000, width: 16,
+  theme: { ground: 5, road: 0, curb: [9, 7], sky: [9, 2], scenery: 'skyline' },
+  look: {
+    kit: 'manhattan', env: 'dust', seed: 233,         // prop kit (render/pbr/manhattan.js) and sky (render/pbr/env.js)
+    fog: 0x8a4a34, fogDensity: 0.0028, key: 0xff9a5a, keyIntensity: 1.9, bgIntensity: 0.4,
+    sunElev: 0.09,                                    // sunset; = DUST_SUN_ELEV in render/pbr/env.js
+    hemi: 0xa0603c, hemiGround: 0x3a2418, ground: 0x5a4236,
+  },
+  control: [
+    [60, 0], [150, -4], [250, -2], [320, 14], [366, 50], [388, 120],     // start straight, SE sweep
+    [388, 200], [372, 270], [330, 310], [270, 322],                      // quay straight, NE corner, top straight
+    [206, 318], [160, 300], [124, 270], [96, 256],                       // chicane: a wide S down to the west run
+    [60, 250], [22, 236], [-4, 206], [-10, 166], [-4, 126], [6, 92],     // west run, hairpin, back down the west side
+    [2, 50], [36, 22],                                                   // bend onto the start straight
+  ],
+  pickups: [{ s: 0.15, type: 'ammo' }, { s: 0.4, type: 'repair' }, { s: 0.65, type: 'cash' }, { s: 0.85, type: 'ammo' }],
+  surfaces: {
+    oil: [{ s: 0.3, d: 4.6, r: 2.6 }],
+    puddles: [{ s: 0.08, d: -3, r: 3.2 }, { s: 0.22, d: 3.2, r: 3.3 }, { s: 0.6, d: -2.6, r: 3 }],
+    dirt: [{ s0: 0.66, s1: 0.78, side: -1 }],          // red dust drifted over one kerb through the chicane and west run
+  },
+};
+export const SLICE_TRACKS = [NEON_LOOP, FOUNDRY_RUN, DAYLITE];
 /** The tracks of the game, in unlock order. */
 export const GAME_TRACKS = SLICE_TRACKS;

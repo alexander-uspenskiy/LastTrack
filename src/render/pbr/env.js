@@ -1,5 +1,5 @@
 // Procedural HDR environments (equirect Float32 RGBA): 'dusk' dystopian-city sky for the race, 'forge' smoke-and-furnace sky for
-// Foundry Run, 'showroom' studio with softboxes.
+// Foundry Run, 'dust' red-dust sunset over a hazy skyline for Daylite, 'showroom' studio with softboxes.
 // Node-safe data builders; envTextures() wraps + PMREM-filters them on a real renderer.
 import * as THREE from 'three';
 import { mulberry32 } from '../../core/mathUtil.js';
@@ -10,10 +10,11 @@ const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a
 
 export const SUN_ELEV = 0.13, SUN_AZ = 2.2;       // rad (sun low in the west)
 export const FORGE_SUN_ELEV = 0.16;               // Foundry Run's low sun; matches look.sunElev in data/tracks/testTrack.js
+export const DUST_SUN_ELEV = 0.09;                // Daylite's sunset, just above the haze; matches look.sunElev in data/tracks/testTrack.js
 /** Direction (unit) the key light comes FROM, in world space for sunDir(elev). */
 export function sunDir(elev = SUN_ELEV) { const c = Math.cos(elev); return [Math.cos(SUN_AZ) * c, Math.sin(elev), Math.sin(SUN_AZ) * c]; }
 
-/** Returns Float32Array RGBA (w*h*4) of HDR radiance. kind: 'dusk' | 'forge' | 'showroom'. */
+/** Returns Float32Array RGBA (w*h*4) of HDR radiance. kind: 'dusk' | 'forge' | 'dust' | 'showroom'. */
 export function buildEnvData(kind = 'dusk', w = 512, h = 256, seed = 4) {
   const data = new Float32Array(w * h * 4), r = mulberry32(seed);
   // skyline: per azimuth column building height (rad) + window pattern
@@ -27,7 +28,13 @@ export function buildEnvData(kind = 'dusk', w = 512, h = 256, seed = 4) {
     for (let k = 0; k < bw && x < w; k++, x++) { stk[x] = bh; stkTip[x] = tall ? 1 : 0; }
     x += 10 + ((r() * 46) | 0);
   }
-  const sd = sunDir(kind === 'forge' ? FORGE_SUN_ELEV : SUN_ELEV);
+  // dust: a hazy skyline on the horizon, low and dense with the odd tall spire (drawn after the skyline rng, like the forge silhouettes)
+  const dsk = new Float32Array(w);
+  if (kind === 'dust') for (let x = 0; x < w;) {
+    const tall = r() < 0.1, bw = tall ? 2 + ((r() * 3) | 0) : 3 + ((r() * 7) | 0), bh = tall ? 0.12 + r() * 0.1 : 0.02 + r() * r() * 0.1;
+    for (let k = 0; k < bw && x < w; k++, x++) dsk[x] = bh;
+  }
+  const sd = sunDir(kind === 'forge' ? FORGE_SUN_ELEV : kind === 'dust' ? DUST_SUN_ELEV : SUN_ELEV);
   for (let y = 0; y < h; y++) {
     const lat = (0.5 - (y + 0.5) / h) * Math.PI;                                       // +pi/2 up
     for (let x = 0; x < w; x++) {
@@ -57,6 +64,18 @@ export function buildEnvData(kind = 'dusk', w = 512, h = 256, seed = 4) {
         c = [c[0] * soot + sun, c[1] * soot + sun * 0.5, c[2] * soot + sun * 0.18];
         if (lat < 0) { const f = smooth(0, -0.4, lat); c = [mix(c[0] * 0.5, 0.05, f), mix(c[1] * 0.4, 0.03, f), mix(c[2] * 0.4, 0.024, f)]; }
         if (lat < stk[x] && lat >= 0) c = stkTip[x] && Math.abs(lat - stk[x]) < 0.014 ? [6, 1.6, 0.4] : [0.012, 0.01, 0.011];   // warning lights on the stack tops
+      } else if (kind === 'dust') {
+        // Daylite: a sunset in red dust. Ember horizon fading through dusty rose to a dim mauve zenith; the sun sits low behind
+        // a hazy skyline, and drifting dust bands streak the sky
+        const e = Math.max(0, lat);
+        const hor = [3.4, 1.05, 0.34], rose = [0.95, 0.36, 0.22], mid = [0.36, 0.14, 0.16], top = [0.08, 0.07, 0.11];
+        c = e < 0.1 ? mix3(hor, rose, smooth(0, 0.1, e)) : e < 0.45 ? mix3(rose, mid, smooth(0.1, 0.45, e)) : mix3(mid, top, smooth(0.45, 1, e));
+        const streak = 1 - 0.24 * smooth(0, 0.3, e) * (0.5 + 0.5 * Math.sin(lon * 9 + 3 * Math.sin(lat * 14)));
+        const cs = dx * sd[0] + dy * sd[1] + dz * sd[2], ang = Math.acos(Math.min(1, cs));
+        const sun = Math.exp(-ang * ang * 3000) * 70 + Math.exp(-ang * ang * 22) * 2.4 + Math.exp(-ang * 2.6) * 0.9;   // disc, halo, dust scatter
+        c = [c[0] * streak + sun, c[1] * streak + sun * 0.55, c[2] * streak + sun * 0.22];
+        if (lat < dsk[x] && lat >= 0) c = r() < 0.05 ? [2.2, 1.1, 0.35] : [0.09, 0.05, 0.06];   // skyline silhouette, a few lit windows
+        if (lat < 0) { const f = smooth(0, -0.25, lat); c = [mix(c[0] * 0.45, 0.1, f), mix(c[1] * 0.35, 0.05, f), mix(c[2] * 0.35, 0.04, f)]; }
       } else {
         // dusk: warm horizon -> violet -> deep blue; low sun; dystopian skyline with neon; wet dark ground
         const e = Math.max(0, lat);

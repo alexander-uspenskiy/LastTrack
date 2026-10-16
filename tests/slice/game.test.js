@@ -17,8 +17,8 @@ import { CARS } from '../../src/data/cars.js';
 
 const NO = { throttle: 0, brake: 0, steer: 0, fire: false, cycleWeapon: false, selectWeapon: null, handbrake: false };
 
-test('game tracks: Neon Loop + Foundry Run are valid circuits with prizes and surfaces', () => {
-  assert.deepEqual(GAME_TRACKS.map((t) => t.id), ['neonloop', 'foundry']);
+test('game tracks: Neon Loop, Foundry Run and Daylite are valid circuits with prizes and surfaces', () => {
+  assert.deepEqual(GAME_TRACKS.map((t) => t.id), ['neonloop', 'foundry', 'daylite']);
   for (const def of GAME_TRACKS) {
     const t = buildTrack(def), a = analyzeTrack(t);
     assert.ok(t.length > 900 && t.length < 1500, `${def.id} length ${t.length}`);

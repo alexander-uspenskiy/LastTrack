@@ -71,7 +71,7 @@ export function createRaceController(host, track, config = {}) {
   const sky = heroSky || pbrMode ? new THREE.Group() : buildSky(theme); root.add(sky);
   const heroTrack = !pbrMode && config.hero && track.id === 'scrapyard' ? buildHeroTrack(track, { seed: config.seed }) : null;
   const look = (track.def && track.def.look) || {};
-  const pbrTrack = pbrMode && (track.def && (track.def.surfaces || track.id === 'neonloop')) && ['neonloop', 'foundry'].includes(track.id) ? buildPbrTrack(track, { seed: look.seed || 77 }) : null;
+  const pbrTrack = pbrMode && (track.def && (track.def.surfaces || track.id === 'neonloop')) && ['neonloop', 'foundry', 'daylite'].includes(track.id) ? buildPbrTrack(track, { seed: look.seed || 77 }) : null;
   const trackMesh = pbrTrack || heroTrack || buildTrackMesh(track); root.add(trackMesh.group);
   const scenery = heroTrack || pbrTrack ? { group: new THREE.Group(), dispose() {} } : buildScenery(track, { seed: config.seed }); root.add(scenery.group);
   let hemi, sun, keyLight = null, shadowsOn = false;
