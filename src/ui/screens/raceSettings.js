@@ -1,21 +1,25 @@
 import { h, button, screenHeader, fmtMoney, attachMenuKeys, clear } from '../dom.js';
 import { getTrack, GAME_TRACKS as TRACKS } from '../../data/tracks/index.js';
 import { offersFor, getPatron } from '../../data/contracts.js';
+import { getDriver } from '../../data/drivers.js';
 import { icon } from '../icons.js';
 import { outlineSvg, diffPips } from './trackSelect.js';
 import { difficultyOf, difficultyLabel } from '../menuLogic.js';
 
+/** Pure: the named racers as one readable list: 'Vex Calloway & Doc Fuse'. */
+export const racerNames = (ids = []) => ids.map((id) => getDriver(id)?.name ?? id).join(' & ');
+
 /**
- * Pure: what the chosen bid will do when the race starts, as one line.
+ * Pure: what the chosen bid will do when the race starts, as one line. The bid names racers on this track's grid.
  * Race mode takes it at the start; practice ignores it; a contract already running keeps its place.
  */
 export function bidSummary(setup, save) {
   if (save.contract) return 'A contract is already running. It settles after this race.';
   if (!setup.bid) return 'No bid: prize and kill bonus only.';
-  const o = offersFor(save).find((x) => x.patron === setup.bid), p = getPatron(setup.bid);
+  const o = offersFor(save, setup.field || []).find((x) => x.patron === setup.bid), p = getPatron(setup.bid);
   if (!o || !p) return 'No bid: prize and kill bonus only.';
   const tail = setup.mode === 'race' ? '' : ' Practice ignores bids, so this one is not taken.';
-  return `${p.org}: wreck ${o.quota} racer${o.quota > 1 ? 's' : ''} for +${fmtMoney(o.bounty)}, or −${fmtMoney(o.penalty)} if you miss.${tail}`;
+  return `${p.org}: wreck ${racerNames(o.targets)} for +${fmtMoney(o.bounty)}, or −${fmtMoney(o.penalty)} if you miss.${tail}`;
 }
 
 /**
@@ -32,11 +36,12 @@ export function createRaceSettingsScreen({ game, flow }) {
 
   // ---- step 1: the bid
   const boardTrack = h('p.muted.small');
+  const gridLine = h('p.muted.small');
   const running = h('div.panel.contract-active');
   const bidGrid = h('div.contract-grid');
   const declineBtn = button('DECLINE: RACE CLEAN', () => { game.setRaceSetup({ bid: null }); render(); }, 'btn-small btn-decline');
   const pageBid = h('div.wizard-step-body',
-    boardTrack, running, bidGrid,
+    boardTrack, gridLine, running, bidGrid,
     h('div.bid-decline', declineBtn, h('span.muted.small', 'No bid: prize and kill bonus only.')));
 
   // ---- step 2: the setup
@@ -78,16 +83,17 @@ export function createRaceSettingsScreen({ game, flow }) {
   }
 
   function renderBid() {
-    const s = setup(), sv = game.getSave(), t = getTrack(s.trackId), open = sv.contract;
+    const s = setup(), sv = game.getSave(), t = getTrack(s.trackId), open = sv.contract, field = s.field || [];
     boardTrack.textContent = `${t.name} · ${t.city}`;
+    gridLine.textContent = field.length ? `On this grid: ${racerNames(field)}.` : 'Pick a track to see who is on its grid.';
     running.classList.toggle('hidden', !open);
     if (open) {
       const p = getPatron(open.patron);
       running.replaceChildren(h('div.panel-title', 'CONTRACT ALREADY RUNNING'),
-        h('p', h('b', p.name), ` · ${p.org}`, h('br'), h('span.muted', `Wreck ${open.quota} racer${open.quota > 1 ? 's' : ''} in this race. It settles when the race ends.`)));
+        h('p', h('b', p.name), ` · ${p.org}`, h('br'), h('span.muted', `Wreck ${racerNames(open.targets || [])} in this race. It settles when the race ends.`)));
     }
     clear(bidGrid);
-    for (const o of offersFor(sv)) {
+    for (const o of offersFor(sv, field)) {
       const p = getPatron(o.patron);
       const mine = !!open && open.patron === p.id;
       const chosen = s.bid === p.id;
@@ -99,7 +105,7 @@ export function createRaceSettingsScreen({ game, flow }) {
         h('div.contract-head', icon(p.icon, { size: 26 }), h('div', h('h3', p.name), h('p.small.muted', p.org))),
         h('p.contract-line', `“${p.line}”`),
         h('div.contract-terms',
-          h('div.term', h('span.small.muted', 'WRECK'), h('b', `${o.quota} racer${o.quota > 1 ? 's' : ''}`)),
+          h('div.term', h('span.small.muted', 'WRECK'), h('b', racerNames(o.targets))),
           h('div.term', h('span.small.muted', 'ON THE FLAG'), h('b.good', '+' + fmtMoney(o.bounty))),
           h('div.term', h('span.small.muted', 'IF YOU MISS'), h('b.bad', '−' + fmtMoney(o.penalty)))),
         accept));

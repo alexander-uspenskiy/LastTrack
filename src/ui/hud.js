@@ -5,7 +5,7 @@ import { h, setText, setStyle, setClass, setChildren, kph, ordinal } from './dom
 import { createDash, gearLabel } from './dash.js';
 import { icon, weaponIcon, carSilhouette, setDamageZones, damageColor } from './icons.js';
 import * as paletteRef from '../render/paletteRef.js';
-import { contractProgress } from '../data/contracts.js';
+import { contractProgress, contractHits } from '../data/contracts.js';
 
 const FEED_MAX = 4;
 const FEED_LIFE = 5; // s
@@ -261,7 +261,7 @@ export function createHud({ root, getWeapon = (id) => ({ name: id }) } = {}) {
     begin({ createMinimap, track, names: n = [], hero = false, carId, contract: c = null } = {}) {
       names = n;
       contract = c; contractDone = false;
-      setText(contractTxt, contractProgress(c, 0));
+      setText(contractTxt, contractProgress(c, []));
       setClass(contractTag, 'hidden', !c);
       dash.setEnabled(hero);
       dash.setCar?.(carId);
@@ -402,10 +402,11 @@ export function createHud({ root, getWeapon = (id) => ({ name: id }) } = {}) {
         }));
       }
 
-      // --- side contract: live tally, and a toast the moment the quota is met ---
+      // --- side contract: live tally of the named racers, and a toast the moment the last one is wrecked ---
       if (contract) {
-        setText(contractTxt, contractProgress(contract, me.kills));
-        if (!contractDone && me.kills >= contract.quota) { contractDone = true; api.toast('CONTRACT COMPLETE', 1600); }
+        const named = (contract.targets || []).length;
+        setText(contractTxt, contractProgress(contract, me.wrecks));
+        if (!contractDone && named && contractHits(contract, me.wrecks) === named) { contractDone = true; api.toast('CONTRACT COMPLETE', 1600); }
       }
 
       // --- events -> feed / toasts ---

@@ -8,7 +8,7 @@ import { getTrack } from '../data/tracks/index.js';
 import { getDriver } from '../data/drivers.js';
 import { getWeapon } from '../data/weapons.js';
 import * as economy from '../data/economy.js';
-import { createGameConfig, SLICE_TRACK_ID } from '../data/sliceConfig.js';
+import { createGameConfig, pickField, SLICE_TRACK_ID } from '../data/sliceConfig.js';
 import { playerLivery } from '../data/liveries.js';
 import { createPaintScreen } from '../ui/screens/paint.js';
 import { createRaceSim } from '../sim/raceSim.js';
@@ -52,6 +52,7 @@ const ERRORS = {
   'no-slots': 'No free weapon slots on this car.', 'ammo-full': 'Ammo is full.', 'not-owned': 'You do not own that.',
   'nothing-to-repair': 'Nothing to repair.', 'decal-limit': 'Six decals per car — remove one first.',
   'contract-active': 'One contract at a time. Race it first.', 'unknown-patron': 'No one is offering that.',
+  'no-field': 'Pick a track first.',
 };
 const inRaceState = (s) => s === 'race' || s === 'paused';
 const MENU_3D = new Set(['title', 'carSelect', 'garage', 'shop', 'paint']);   // states drawn over the live 3D showroom
@@ -100,7 +101,10 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
   try { audio = safe(createAudioEngine(), reportError); } catch (e) { reportError(e); }
 
   const flow = createFlowMachine({ initial: 'title' });
-  let raceSetup = { trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', practiceRivals: false, bid: null };   // bid: patron id the wizard offered, taken at START
+  // bid: patron id the wizard offered, taken at START. field: the driver ids on this track's grid, drawn when the track is chosen
+  let raceSetup = { trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', practiceRivals: false, bid: null, field: null };
+  // the seed for a fresh draw of racers: the race number and the clock, so a re-pick is a new field
+  const rollSeed = () => (Date.now() ^ ((saveData.races + 1) * 2654435761)) >>> 0;
   let sim = null, controller = null, track = null, config = null;
   let snapA = null, snapB = null, acc = 0, endTimer = 0, wreckTimer = 0, finalized = false;
   let lastResult = null;
@@ -129,7 +133,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
     getSave: () => saveData,
     setSave: (s) => commit(s),
     hasSavedGame: () => store.exists(),
-    newGame() { saveData = store.reset(); bus.emit('game:new'); raceSetup = { ...raceSetup, trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', bid: null }; return saveData; },
+    newGame() { saveData = store.reset(); bus.emit('game:new'); raceSetup = { ...raceSetup, trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', bid: null, field: null }; return saveData; },
     chooseCar(carId) {
       const r = economy.chooseCar(saveData, carId);
       if (!r.ok) throw new Error('chooseCar: ' + r.error);
@@ -150,9 +154,9 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
       bus.emit('purchase', { kind, id, cost: r.cost || 0, balance: saveData.cash, level: (kind === 'upgrade' ? saveData.upgrades[id] : kind === 'spikes' ? saveData.spikes[id] : 0) });
       return { ok: true };
     },
-    /** acceptContract(patronId) -> {ok, error?}: lock in a board bid; it settles after the next race. */
+    /** acceptContract(patronId) -> {ok, error?}: lock in a board bid for the chosen track's racers; it settles after the race. */
     acceptContract(patronId) {
-      const r = economy.acceptContract(saveData, patronId);
+      const r = economy.acceptContract(saveData, patronId, raceSetup.field || []);
       if (!r.ok) return { ok: false, error: ERRORS[r.error] || r.error };
       commit(r.save);
       bus.emit('contract:accepted', { patron: r.save.contract.patron, quota: r.save.contract.quota });
@@ -163,13 +167,15 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
       saveData = store.reset();
       const r = economy.chooseCar(saveData, 'hammer');
       if (r.ok) saveData = r.save;
-      raceSetup = { trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', practiceRivals: false, bid: null };
+      raceSetup = { trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', practiceRivals: false, bid: null, field: null };
       return flow.force('loading');
     },
     /** The player's resolved livery for a car (default: the saved car). Used by every 3D preview. */
     liveryOf: (carId) => playerLivery(carId ? { ...saveData, carId } : saveData),
     getRaceSetup: () => raceSetup,
     setRaceSetup(p) { raceSetup = { ...raceSetup, ...p }; bus.emit('race:setup', raceSetup); return raceSetup; },
+    /** Choosing a track starts a fresh race setup: its racers are drawn now (the bids name them) and any bid taken on another race is dropped. */
+    selectTrack(trackId) { return game.setRaceSetup({ trackId, bid: null, field: pickField(rollSeed()) }); },
     driverName: (r) => (r.isPlayer ? 'YOU (the rookie)' : getDriver(r.driverId)?.name ?? `Car ${r.carId}`),
     createPreview(c) {
       try { return createCarPreview(c); } catch (e) { reportError(e); return null; }
@@ -274,7 +280,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
     track = buildTrack(def);
     const practice = setup.mode === 'practice';
     const seed = (Date.now() ^ ((saveData.races + 1) * 2654435761)) >>> 0;
-    config = createGameConfig({ mode: setup.mode, trackId: def.id, laps: setup.laps, save: saveData, seed, practiceRivals: !!setup.practiceRivals });
+    config = createGameConfig({ mode: setup.mode, trackId: def.id, laps: setup.laps, save: saveData, seed, practiceRivals: !!setup.practiceRivals, field: setup.field });
     void practice;
     sim = createRaceSim(config);
     snapA = snapB = sim.snapshot();
@@ -301,12 +307,12 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
     const result = sim.result();
     const before = saveData;
     const applied = economy.applyRaceResult(saveData, result, { mode: config.mode, nCars: result.finishOrder.length });
-    const contract = economy.settleContract(applied.save, { mode: config.mode, kills: result.player.kills });
+    const contract = economy.settleContract(applied.save, { mode: config.mode, wrecked: result.player.wrecks });
     const p = result.player;
     const summary = {
       mode: config.mode, position: p.position, time: p.time, kills: p.kills, wrecked: !!p.wrecked,
       prize: applied.prize, killBonus: applied.killBonus, total: applied.total,
-      unlocked: applied.unlockedTrack, damageFraction: p.damageFraction,
+      passed: applied.passedTrack ? getTrack(applied.passedTrack)?.name ?? applied.passedTrack : null, damageFraction: p.damageFraction,
       newBest: config.mode === 'race' && p.time != null && (before.bestTimes[result.trackId] == null || p.time < before.bestTimes[result.trackId]),
       contract: contract.settled, contractNet: contract.settled ? contract.settled.net : 0,
       contractOpen: config.mode === 'practice' && !!before.contract,
@@ -323,10 +329,10 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
   function pause() { if (flow.state !== 'race') return false; return flow.transition('paused'); }
   function resume() { if (flow.state !== 'paused') return false; return flow.transition('race'); }
   function restartRace() { return flow.state === 'paused' ? flow.transition('loading') : flow.force('loading'); }
-  /** Leaving a race early is not finishing it: an open contract settles on the kills so far (complete, or the penalty). */
+  /** Leaving a race early is not finishing it: an open contract settles on the racers wrecked so far (complete, or the penalty). */
   function abandonRace() {
     if (!config || config.mode !== 'race' || !saveData.contract) return undefined;
-    const r = economy.settleContract(saveData, { mode: 'race', kills: snapB?.cars?.[0]?.kills ?? 0 });
+    const r = economy.settleContract(saveData, { mode: 'race', wrecked: snapB?.cars?.[0]?.wrecks ?? [] });
     commit(r.save);
     bus.emit('contract:settled', r.settled);
     return r.settled.complete

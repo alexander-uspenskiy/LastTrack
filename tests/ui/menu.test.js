@@ -68,7 +68,7 @@ test('settings normalise, persist and reload', () => {
 });
 
 test('title save summary and garage damage zones', () => {
-  assert.match(saveSummary({ cash: 12400, carId: 'hammer', unlockedTracks: ['scrapyard', 'strip'] }), /\$12,400 · Hammer · 1\/3 tracks/);
+  assert.match(saveSummary({ cash: 12400, carId: 'hammer', passedTracks: ['neonloop'] }), /\$12,400 · Hammer · 1\/3 passed/);
   assert.equal(saveSummary(null), '');
   const z = damageZones(0.4); assert.equal(z.length, 4); assert.ok(z.every((v) => v >= 0 && v <= 1)); assert.deepEqual(damageZones(5).map((v) => v), [1, 0.85, 1, 0.85]);
 });

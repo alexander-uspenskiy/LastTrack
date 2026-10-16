@@ -31,13 +31,13 @@ test('game tracks: Neon Loop, Foundry Run and Daylite are valid circuits with pr
   assert.notEqual(GAME_TRACKS[1].look.fog, undefined);
 });
 
-test('economy: winning on the first game track unlocks the second; saves keep game-track ids', () => {
+test('economy: a top-three finish without a wreck passes the game track; saves keep game-track ids', () => {
   const save = { ...defaultSave(), carId: 'hammer' };
   const res = { trackId: 'neonloop', laps: 3, finishOrder: [], player: { position: 1, time: 100, kills: 1, wrecked: false, damageFraction: 0.2, ammoLeft: [], pickupCash: 0 } };
   const out = applyRaceResult(save, res, { mode: 'race', nCars: 6 });
-  assert.equal(out.unlockedTrack, 'foundry'); assert.ok(out.save.unlockedTracks.includes('foundry')); assert.equal(out.prize, 4000); assert.equal(out.killBonus, 500);
+  assert.equal(out.passedTrack, 'neonloop'); assert.ok(out.save.passedTracks.includes('neonloop')); assert.equal(out.prize, 4000); assert.equal(out.killBonus, 500);
   const store = createSaveStore(createMemoryStorage()); store.save(out.save);
-  assert.ok(store.load().unlockedTracks.includes('foundry')); assert.equal(store.load().bestTimes.neonloop, 100);
+  assert.ok(store.load().passedTracks.includes('neonloop')); assert.equal(store.load().bestTimes.neonloop, 100);
 });
 
 test('field picker: seeded, five distinct drivers, all three cars show up over time, distinct liveries', () => {

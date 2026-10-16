@@ -33,12 +33,13 @@ const LIVERY_POOL = [12, 11, 2, 8, 14, 13, 5, 4, 10, 3, 9, 15, 1, 6];
 export function pickField(seed, n = FIELD_ENEMIES) { return pickDrivers(seed, n); }
 
 /**
- * createGameConfig({ mode, trackId, laps, save, seed, practiceRivals }) -> RaceConfig with `hero`/`heroStyle` set:
+ * createGameConfig({ mode, trackId, laps, save, seed, practiceRivals, field }) -> RaceConfig with `hero`/`heroStyle` set:
  * the player's car from the save + 5 enemies (each driver keeps their own car, weapons, skill and aggression), distinct liveries.
+ * `field` = the driver ids drawn when the track was chosen (the racers the bids name); without one, the seed draws it.
  */
-export function createGameConfig({ mode = 'race', trackId = SLICE_TRACK_ID, laps, save, seed, practiceRivals = false } = {}) {
+export function createGameConfig({ mode = 'race', trackId = SLICE_TRACK_ID, laps, save, seed, practiceRivals = false, field = null } = {}) {
   const practice = mode === 'practice';
-  const ids = practice && !practiceRivals ? [] : pickDrivers(seed ?? 1, FIELD_ENEMIES);
+  const ids = practice && !practiceRivals ? [] : field && field.length ? [...field] : pickDrivers(seed ?? 1, FIELD_ENEMIES);
   const cfg = createRaceConfig({ mode, trackId, laps, save, seed, rivalIds: ids });
   const colors = assignLiveries(cfg.rivals.map((r) => r.color), cfg.player.color, LIVERY_POOL);
   const pl = playerLivery(save || {});

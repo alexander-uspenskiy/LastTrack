@@ -2,11 +2,11 @@
 import { getCar } from './cars.js';
 import { getWeapon } from './weapons.js';
 import { UPGRADES, getUpgrade, upgradeCost, applyUpgrades } from './upgrades.js';
-import { TRACKS, GAME_TRACKS, getTrack } from './tracks/index.js';
+import { getTrack } from './tracks/index.js';
 import { getPaint, getAccent, isNumberStr, PAINTS } from './liveries.js';
 import { getSpike, spikeCost, normalizeSpikes, noSpikes, SPIKE_TIERS } from './spikes.js';
 import { getDecal, normalizePlacement, MAX_DECALS } from './decals.js';
-import { getPatron, quotaFor } from './contracts.js';
+import { getPatron, offersFor, contractHits } from './contracts.js';
 
 export const STARTING_CASH = 5000;
 export const KILL_BONUS = 500;
@@ -107,25 +107,22 @@ export function chooseCar(save, carId) {
 }
 
 /**
- * Apply a finished RaceResult to the save (race mode: prize, kill bonus, damage, ammo, stats, best time, unlock;
+ * Apply a finished RaceResult to the save (race mode: prize, kill bonus, damage, ammo, stats, best time, pass;
  * practice mode: only best time is NOT recorded and nothing changes).
- * Returns { save, prize, killBonus, total, unlockedTrack|null }.
+ * A track is passed by finishing in the top three without a wreck. Any track can be raced whatever its state.
+ * Returns { save, prize, killBonus, total, passedTrack|null }.
  */
 export function applyRaceResult(save, result, { mode = 'race', nCars = result?.finishOrder?.length ?? 5 } = {}) {
-  if (mode !== 'race' || !result) return { save, prize: 0, killBonus: 0, total: 0, unlockedTrack: null };
+  if (mode !== 'race' || !result) return { save, prize: 0, killBonus: 0, total: 0, passedTrack: null };
   const track = getTrack(result.trackId);
   const p = result.player;
   const prize = prizeFor(p.position, nCars, track ? track.prize : 4000);
   const bonus = (p.kills || 0) * KILL_BONUS;
   const best = { ...save.bestTimes };
   if (p.time != null && (best[result.trackId] == null || p.time < best[result.trackId])) best[result.trackId] = p.time;
-  let unlocked = [...save.unlockedTracks];
-  let unlockedTrack = null;
-  if (p.position === 1 && track) {
-    const list = GAME_TRACKS.includes(track) ? GAME_TRACKS : TRACKS;   // the game's own track ladder, or the legacy one
-    const next = list[list.indexOf(track) + 1];
-    if (next && !unlocked.includes(next.id)) { unlocked.push(next.id); unlockedTrack = next.id; }
-  }
+  const passed = [...(save.passedTracks || [])];
+  let passedTrack = null;
+  if (track && p.position <= 3 && !p.wrecked && !passed.includes(track.id)) { passed.push(track.id); passedTrack = track.id; }
   const ammoMap = new Map((p.ammoLeft || []).map((a) => [a.id, a.ammo]));
   const out = {
     ...save,
@@ -136,33 +133,36 @@ export function applyRaceResult(save, result, { mode = 'race', nCars = result?.f
     races: save.races + 1,
     kills: save.kills + (p.kills || 0),
     bestTimes: best,
-    unlockedTracks: unlocked,
+    passedTracks: passed,
   };
-  return { save: out, prize, killBonus: bonus, total: prize + bonus, unlockedTrack };
+  return { save: out, prize, killBonus: bonus, total: prize + bonus, passedTrack };
 }
 
 // ---------------------------------------------------------------- contracts (side bids; one at a time)
-/** Lock in a patron's bid from the board. The quota is the one the board showed for this save. */
-export function acceptContract(save, patronId) {
+/** Lock in a patron's bid for this track's field. The named racers are the ones the board showed for that field. */
+export function acceptContract(save, patronId, field = []) {
   const p = getPatron(patronId);
   if (!p) return fail(save, 'unknown-patron');
   if (save.contract) return fail(save, 'contract-active');
-  return { ok: true, save: { ...save, contract: { patron: p.id, quota: quotaFor(save, p) } } };
+  const offer = offersFor(save, field).find((o) => o.patron === p.id);
+  if (!offer) return fail(save, 'no-field');
+  return { ok: true, save: { ...save, contract: { patron: p.id, quota: offer.quota, targets: offer.targets } } };
 }
 
 /**
  * Settle the active contract when a race ends. Race mode only: practice leaves it open for the next real race.
- * `kills` = the player's kills in that race (counts even if the player wrecked out). Quota met: bounty paid.
- * Missed: the patron's penalty is taken, never below zero. Returns { save, settled|null }.
+ * `wrecked` = the driver ids the player wrecked in that race (counts even if the player wrecked out). Every named racer
+ * wrecked: bounty paid. Any missed: the patron's penalty is taken, never below zero. Returns { save, settled|null }.
  */
-export function settleContract(save, { mode = 'race', kills = 0 } = {}) {
+export function settleContract(save, { mode = 'race', wrecked = [] } = {}) {
   const c = save.contract, p = c && getPatron(c.patron);
   if (!c || !p || mode !== 'race') return { save, settled: null };
-  const k = Math.max(0, Math.floor(Number(kills) || 0));
-  const complete = k >= c.quota;
-  const bounty = complete ? c.quota * p.perKill : 0;
+  const targets = c.targets || [];
+  const hit = contractHits(c, wrecked);
+  const complete = targets.length > 0 && hit === targets.length;
+  const bounty = complete ? targets.length * p.perKill : 0;
   const penalty = complete ? 0 : Math.min(p.penalty, save.cash);
-  const settled = { patron: p.id, org: p.org, quota: c.quota, kills: k, complete, bounty, penalty, net: bounty - penalty };
+  const settled = { patron: p.id, org: p.org, quota: targets.length, targets, hit, complete, bounty, penalty, net: bounty - penalty };
   return { save: { ...save, cash: save.cash + bounty - penalty, contract: null }, settled };
 }
 

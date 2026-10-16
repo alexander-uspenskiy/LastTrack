@@ -63,7 +63,7 @@ export function createRaceSim(config, opts = {}) {
     initWeapons(car, e.loadout);
     car.livery = e.livery || null;
     car.spikes = e.spikes || null;
-    car.kills = 0; car.bumpCd = 0; car.cash = 0; car.rank = i + 1;
+    car.kills = 0; car.wrecksOf = []; car.bumpCd = 0; car.cash = 0; car.rank = i + 1;
     car.proj = track.project(car.x, car.y);
     initRecovery(car); car.scrapeCd = 0; car.wallT = -9;
     car.aiControlled = !e.isPlayer || !!opts.aiPlayer;
@@ -102,7 +102,7 @@ export function createRaceSim(config, opts = {}) {
     const power = clamp(amount / Math.max(1, victim.armorMax) * 4, 0.2, 1.5);
     if (!killed) shedParts(victim, newlyLost(victim.dmgMap, victim.armor / victim.armorMax, victim.partsLost), false, power);
     if (killed) {
-      if (credit !== null && credit !== undefined && credit !== victim.id && cars[credit]) cars[credit].kills++;
+      if (credit !== null && credit !== undefined && credit !== victim.id && cars[credit]) { cars[credit].kills++; cars[credit].wrecksOf.push(victim.driverId); }
       emit('wreck', { carId: victim.id, byId: credit !== victim.id ? credit ?? null : null, x: victim.x, y: victim.y, vx: victim.vx, vy: victim.vy, heading: victim.heading, weaponId, seed: (fxRng() * 4294967296) >>> 0 });
       emit('explosion', { x: victim.x, y: victim.y, radius: 5, kind: 'wreck', big: true, carId: victim.id, weaponId });
       shedParts(victim, remainingParts(victim.partsLost), true, 1 + power * 0.5);
@@ -277,7 +277,7 @@ export function createRaceSim(config, opts = {}) {
         id: c.id, driverId: c.driverId, isPlayer: c.isPlayer, name: c.name,
         x: c.x, y: c.y, heading: c.heading, vx: c.vx, vy: c.vy, speed: c.speed, steer: c.steer, yawRate: c.yawRate,
         armor: c.armor, armorMax: c.armorMax, wrecked: c.wrecked, wreckT: c.wrecked ? c.wreckTimer : 0, smoke: isSmoking(c), burning: isBurning(c), tyresPopped: c.tyreTimer > 0, oiled: c.oilTimer > 0,
-        lap: director.lapOf(c), s: director.sOf(c), position: c.rank, finished: c.finished, finishTime: c.finishTime, kills: c.kills,
+        lap: director.lapOf(c), s: director.sOf(c), position: c.rank, finished: c.finished, finishTime: c.finishTime, kills: c.kills, wrecks: c.wrecksOf.slice(),
         weapons: c.weapons.map((w) => ({ id: w.id, ammo: w.ammo })), activeWeapon: c.activeWeapon, firing: c.firing,
         lock: c.lock && c.lock.target ? { id: c.lock.target.id, t: c.lock.t, locked: c.lock.locked } : null,
         color: c.color, helmetColor: c.helmetColor, livery: c.livery,
@@ -303,7 +303,7 @@ export function createRaceSim(config, opts = {}) {
     return {
       trackId: track.id, laps, finishOrder,
       player: {
-        position: p.rank, time: p.finished ? p.finishTime : null, kills: p.kills, wrecked: p.wrecked,
+        position: p.rank, time: p.finished ? p.finishTime : null, kills: p.kills, wrecked: p.wrecked, wrecks: p.wrecksOf.slice(),
         armorLeft: p.armor, armorMax: p.armorMax, damageFraction: clamp(1 - p.armor / p.armorMax, 0, 1),
         ammoLeft: p.weapons.map((w) => ({ id: w.id, ammo: w.ammo })), pickupCash: p.cash,
       },

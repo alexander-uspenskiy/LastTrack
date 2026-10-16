@@ -10,7 +10,7 @@ import { HARBOR } from './harbor.js';
 import { LIBERTY } from './liberty.js';
 import { SLICE_TRACKS, GAME_TRACKS } from './testTrack.js';
 
-// Difficulty order: winning a track unlocks the next one.
+// Difficulty order (the pips on the track cards). Every track can be raced; a top-three finish without a wreck passes it.
 export const TRACKS = [SCRAPYARD, STRIP, MOJAVE, BAYOU, LAKESHORE, BADLANDS, SPILLWAY, RUSTBELT, HARBOR, LIBERTY];
 
 export { SLICE_TRACKS, GAME_TRACKS };

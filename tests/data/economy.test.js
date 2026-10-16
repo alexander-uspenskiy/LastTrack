@@ -68,10 +68,30 @@ test('applyRaceResult', () => {
   assert.equal(r.prize, 4000); assert.equal(r.killBonus, 1000);
   assert.equal(r.save.cash, 10000); assert.equal(r.save.damage, 0.25);
   assert.equal(r.save.wins, 1); assert.equal(r.save.races, 1); assert.equal(r.save.kills, 2);
-  assert.deepEqual(r.save.unlockedTracks, ['scrapyard', 'strip']); assert.equal(r.unlockedTrack, 'strip');
+  assert.deepEqual(r.save.passedTracks, ['scrapyard']); assert.equal(r.passedTrack, 'scrapyard');
   assert.equal(r.save.weapons[0].ammo, 77); assert.equal(r.save.bestTimes.scrapyard, 200);
   const r2 = applyRaceResult(s0, res(3, 0));
-  assert.equal(r2.save.unlockedTracks.length, 1); assert.equal(r2.save.wins, 0);
+  assert.deepEqual(r2.save.passedTracks, ['scrapyard']); assert.equal(r2.save.wins, 0);
   assert.equal(applyRaceResult(s0, res(1, 5), { mode: 'practice' }).save, s0);
   assert.equal(s0.cash, 5000);
+});
+
+test('a track is passed by a top-three finish without a wreck; any other result leaves it unpassed', () => {
+  const res = (pos, wrecked = false) => ({ trackId: 'strip', finishOrder: [1, 2, 3, 4, 5].map(() => ({})), player: { position: pos, time: 200, kills: 0, wrecked, damageFraction: 0, ammoLeft: [] } });
+  const s0 = defaultSave();
+  for (const pos of [1, 2, 3]) assert.equal(applyRaceResult(s0, res(pos)).passedTrack, 'strip', `position ${pos} passes`);
+  assert.equal(applyRaceResult(s0, res(4)).passedTrack, null, 'fourth place does not pass');
+  assert.equal(applyRaceResult(s0, res(2, true)).passedTrack, null, 'a wreck does not pass, even in the top three');
+  assert.deepEqual(applyRaceResult(s0, res(2, true)).save.passedTracks, [], 'nothing is recorded');
+  const passed = applyRaceResult(s0, res(1)).save;
+  const again = applyRaceResult(passed, res(2));
+  assert.equal(again.passedTrack, null, 'a track is passed once');
+  assert.deepEqual(again.save.passedTracks, ['strip']);
+});
+
+test('every track can be raced: passing one does not unlock or lock the others', () => {
+  const res = { trackId: 'strip', finishOrder: [1, 2, 3, 4, 5].map(() => ({})), player: { position: 1, time: 200, kills: 0, wrecked: false, damageFraction: 0, ammoLeft: [] } };
+  const out = applyRaceResult(defaultSave(), res).save;
+  assert.deepEqual(out.passedTracks, ['strip']);
+  assert.equal(out.unlockedTracks, undefined, 'the unlock ladder is gone');
 });

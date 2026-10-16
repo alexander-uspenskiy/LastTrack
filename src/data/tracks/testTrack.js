@@ -73,5 +73,5 @@ export const DAYLITE = {
   },
 };
 export const SLICE_TRACKS = [NEON_LOOP, FOUNDRY_RUN, DAYLITE];
-/** The tracks of the game, in unlock order. */
+/** The tracks of the game, in difficulty order. */
 export const GAME_TRACKS = SLICE_TRACKS;

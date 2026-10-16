@@ -1,17 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bidSummary } from '../../src/ui/screens/raceSettings.js';
+import { bidSummary, racerNames } from '../../src/ui/screens/raceSettings.js';
 import { createFlowMachine } from '../../src/ui/flowMachine.js';
 import { defaultSave } from '../../src/data/saveStore.js';
+import { offersFor } from '../../src/data/contracts.js';
 
-const race = { mode: 'race', bid: 'military' };
+const FIELD = ['vex', 'fuse', 'kane', 'cinder', 'rust'];   // the racers on the grid of the track just chosen
+const race = { mode: 'race', bid: 'military', field: FIELD };
 
-test('bid line: none, race with a bid, practice with a bid, and a contract already running', () => {
-  const save = { ...defaultSave(), races: 1 };   // the board asks for 2 racers from Federal Motor Corps after one race
-  assert.equal(bidSummary({ mode: 'race', bid: null }, save), 'No bid: prize and kill bonus only.');
-  assert.match(bidSummary(race, save), /^Federal Motor Corps: wreck 2 racers for \+\$2,000, or −\$300 if you miss\.$/);
-  assert.match(bidSummary({ mode: 'practice', bid: 'mafia' }, save), /Practice ignores bids, so this one is not taken\.$/);
-  assert.match(bidSummary(race, { ...save, contract: { patron: 'mafia', quota: 1 } }), /already running/);
+test('bid line: none, race with a bid naming racers on the grid, practice with a bid, and a contract already running', () => {
+  const save = { ...defaultSave(), races: 1 };   // after one race the military board names 2 racers
+  const named = offersFor(save, FIELD).find((o) => o.patron === 'military').targets;
+  assert.equal(named.length, 2);
+  assert.equal(bidSummary({ mode: 'race', bid: null, field: FIELD }, save), 'No bid: prize and kill bonus only.');
+  assert.equal(bidSummary(race, save), `Federal Motor Corps: wreck ${racerNames(named)} for +$2,000, or −$300 if you miss.`);
+  assert.match(bidSummary({ mode: 'practice', bid: 'mafia', field: FIELD }, save), /Practice ignores bids, so this one is not taken\.$/);
+  assert.match(bidSummary(race, { ...save, contract: { patron: 'mafia', quota: 1, targets: ['vex'] } }), /already running/);
+});
+
+test('no track, no bid: a bid is never taken before the chosen track has racers', () => {
+  assert.equal(bidSummary({ mode: 'race', bid: 'military' }, defaultSave()), 'No bid: prize and kill bonus only.');
+  assert.equal(bidSummary({ mode: 'race', bid: 'military', field: [] }, defaultSave()), 'No bid: prize and kill bonus only.');
+});
+
+test('the named racers read as a list, by their driver names', () => {
+  assert.equal(racerNames(['vex', 'fuse']), 'Vex Calloway & Doc Fuse');
+  assert.equal(racerNames(['nobody']), 'nobody');
 });
 
 test('the wizard sits between track select and the race: track, then settings, then loading', () => {

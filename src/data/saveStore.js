@@ -10,6 +10,7 @@ import { getPaint, getAccent, isNumberStr, PAINTS } from './liveries.js';
 import { normalizeSpikes, noSpikes } from './spikes.js';
 import { getDecal, normalizePlacements } from './decals.js';
 import { getPatron, CONTRACT_MAX_QUOTA } from './contracts.js';
+import { getDriver } from './drivers.js';
 const ALL_TRACKS = [...TRACKS, ...SLICE_TRACKS];
 
 export const SAVE_KEY = 'lasttrack.save.v1';
@@ -34,7 +35,7 @@ export function defaultSave() {
     races: 0,
     kills: 0,
     bestTimes: {},
-    unlockedTracks: [TRACKS[0].id],
+    passedTracks: [],   // tracks passed: a top-three finish without a wreck (any track can be raced; passing is the record)
     // livery (v0.3): null paint/accent = the car's stock colours; decalsOwned = bought decal ids; decals = placed (max 6)
     paint: null,
     accent: null,
@@ -43,16 +44,20 @@ export function defaultSave() {
     decals: [],
     // spikes (v0.4): tier 0..2 per set; older saves migrate to none
     spikes: noSpikes(),
-    // side contract (v0.5): the accepted bid { patron, quota }, settled after the next race; null = none
+    // side contract (v0.5): the accepted bid { patron, quota, targets }, settled after the next race; null = none
     contract: null,
   };
 }
 
-/** A contract is { patron, quota } from a known patron; anything else (older saves, bad data) is dropped. */
+/**
+ * A contract is { patron, quota, targets } from a known patron: targets are the racers it names (driver ids, distinct, known,
+ * one per quota). Anything else (older saves without targets, bad data) is dropped.
+ */
 function normalizeContract(c) {
-  if (!isObj(c) || !getPatron(c.patron)) return null;
-  const quota = Math.floor(num(c.quota, 0));
-  return quota >= 1 && quota <= CONTRACT_MAX_QUOTA ? { patron: c.patron, quota } : null;
+  if (!isObj(c) || !getPatron(c.patron) || !Array.isArray(c.targets)) return null;
+  const targets = [...new Set(c.targets.filter((t) => typeof t === 'string' && getDriver(t)))];
+  const quota = targets.length;
+  return quota >= 1 && quota <= CONTRACT_MAX_QUOTA ? { patron: c.patron, quota, targets } : null;
 }
 
 export function normalizeSave(input) {
@@ -87,10 +92,7 @@ export function normalizeSave(input) {
       if (Number.isFinite(v) && v > 0) d.bestTimes[t.id] = v;
     }
   }
-  if (Array.isArray(input.unlockedTracks)) {
-    const ids = ALL_TRACKS.map((t) => t.id).filter((id) => id === TRACKS[0].id || input.unlockedTracks.includes(id));
-    d.unlockedTracks = ids;
-  }
+  if (Array.isArray(input.passedTracks)) d.passedTracks = ALL_TRACKS.map((t) => t.id).filter((id) => input.passedTracks.includes(id));
   // livery migration: older saves have none of these fields -> stock paint, no decals
   if (getPaint(input.paint)) d.paint = input.paint;
   if (getAccent(input.accent)) d.accent = input.accent;

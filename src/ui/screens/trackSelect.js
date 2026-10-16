@@ -21,30 +21,28 @@ export function createTrackSelectScreen({ game, flow }) {
   let detach = null;
   function render() {
     const save = game.getSave();
+    const passed = save.passedTracks || [];
     clear(list);
-    let nOpen = 0;
     TRACKS.forEach((t, i) => {
-      const open = i === 0 || save.unlockedTracks.includes(t.id);
-      if (open) nOpen++;
-      const go = () => { game.setRaceSetup({ trackId: t.id }); flow.transition('raceSettings'); };
-      const b = button(open ? 'SELECT' : 'LOCKED', go, open ? 'btn-primary' : '');
-      b.disabled = !open;
+      const done = passed.includes(t.id);
+      // every track can be raced; choosing one draws its racers and opens the bid board for them
+      const go = () => { game.selectTrack(t.id); flow.transition('raceSettings'); };
+      const b = button('SELECT', go, 'btn-primary');
       b.dataset.track = t.id;
-      const prev = TRACKS[i - 1];
       const d = difficultyOf(i, TRACKS.length);
-      const card = h('div.panel.track-card' + (open ? '' : '.locked'),
-        h('div.track-top', h('span.num', String(i + 1).padStart(2, '0')), diffPips(d)),
+      const card = h('div.panel.track-card' + (done ? '.passed' : ''),
+        h('div.track-top', h('span.num', String(i + 1).padStart(2, '0')), done ? h('span.badge', icon('trophy', { size: 14 }), 'PASSED') : null, diffPips(d)),
         outlineSvg(t.control),
         h('div', h('h3', t.name), h('div.city', `${t.city} · ${difficultyLabel(d)}`)),
-        open ? h('p.track-blurb', t.blurb) : h('p.track-blurb', h('span.lock-badge', icon('lock', { size: 14 }), `Win ${prev ? prev.name : 'a race'} to unlock`)),
+        h('p.track-blurb', t.blurb),
         h('div.track-meta', h('span', 'Prize', h('b', fmtMoney(t.prize))), h('span', 'Laps', h('b', String(t.laps))), h('span', 'Best', h('b', fmtTime(save.bestTimes[t.id])))),
         b);
-      if (open) card.addEventListener('click', (e) => { if (!e.target.closest('button')) go(); });
+      card.addEventListener('click', (e) => { if (!e.target.closest('button')) go(); });
       list.append(card);
     });
-    count.textContent = `${nOpen}/${TRACKS.length} UNLOCKED`;
+    count.textContent = `${TRACKS.filter((t) => passed.includes(t.id)).length}/${TRACKS.length} PASSED`;
   }
-  const el = h('section.screen.screen-tracks', screenHeader('PICK YOUR TRACK', 'Win a race to unlock the next.', count), h('div.screen-body', list),
+  const el = h('section.screen.screen-tracks', screenHeader('PICK YOUR TRACK', 'Race any track. Top three without a wreck passes it.', count), h('div.screen-body', list),
     h('footer.screen-foot', button('BACK', () => flow.transition('garage'), 'btn-back')));
   return { el, show() { detach = attachMenuKeys(el); render(); }, hide() { detach?.(); } };
 }

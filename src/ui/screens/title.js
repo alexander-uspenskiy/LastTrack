@@ -9,8 +9,8 @@ import { VERSION } from '../../version.js';
 export function saveSummary(save) {
   if (!save) return '';
   const car = getCar(save.carId);
-  const open = GAME_TRACKS.filter((t, i) => i === 0 || (save.unlockedTracks || []).includes(t.id)).length;
-  return `${fmtMoney(save.cash)} · ${car ? car.name : 'No car'} · ${open}/${GAME_TRACKS.length} tracks`;
+  const passed = GAME_TRACKS.filter((t) => (save.passedTracks || []).includes(t.id)).length;
+  return `${fmtMoney(save.cash)} · ${car ? car.name : 'No car'} · ${passed}/${GAME_TRACKS.length} passed`;
 }
 
 function menuButton(label, sub, onClick, cls = '', key = '') {

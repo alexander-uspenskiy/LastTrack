@@ -42,7 +42,7 @@ export function createResultsScreen({ game, flow }) {
         if (summary.contractOpen) money.append(h('p.muted.small', 'Your contract stays open for the next race.'));
       } else {
         const c = summary.contract;
-        const contractRow = !c ? null : c.complete ? [`CONTRACT · ${c.org} ${c.kills}/${c.quota}`, c.bounty] : ['CONTRACT FAILED', -c.penalty];
+        const contractRow = !c ? null : c.complete ? [`CONTRACT · ${c.org} ${c.hit}/${c.quota} named wrecked`, c.bounty] : ['CONTRACT FAILED', -c.penalty];
         const rows = [['PRIZE', summary.prize], [`KILL BONUS (${summary.kills})`, summary.killBonus], summary.pickupCash ? ['CASH PICKUPS', summary.pickupCash] : null, contractRow].filter(Boolean);
         let delay = 150;
         for (const [label, v] of rows) {
@@ -55,7 +55,7 @@ export function createResultsScreen({ game, flow }) {
         stops.push(animateCount(tot, summary.total + (summary.pickupCash || 0) + (summary.contractNet || 0), { fmt: signedMoney, delay, ms: 1100 }));
         if (summary.damageFraction > 0) money.append(h('p.muted.small', { style: { marginTop: '8px' } }, `Car damage ${Math.round(summary.damageFraction * 100)}% — repair it in the garage.`));
         if (summary.newBest) money.append(h('span.badge', icon('trophy', { size: 14 }), 'New best time'));
-        if (summary.unlocked) money.append(h('span.badge', icon('lock', { size: 14 }), 'Track unlocked: ' + summary.unlocked));
+        if (summary.passed) money.append(h('span.badge', icon('trophy', { size: 14 }), 'Track passed: ' + summary.passed));
       }
     },
     hide() { detach?.(); stops.forEach((s) => s()); stops = []; },

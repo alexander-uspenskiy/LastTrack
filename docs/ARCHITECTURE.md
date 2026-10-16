@@ -80,8 +80,8 @@ RaceConfig = { mode:'race'|'practice', trackId, laps, seed,
   rivals:[{ driverId, stats, loadout, skill, aggression, favoriteWeapon }] }   // rivals in grid order
 // saveStore.js — createSaveStore(storage) -> { load(), save(s), reset() } ; defaultSave()
 Save = { version:1, cash, carId, upgrades:{armor:0,engine:0,tyres:0}, damage:0 /*0..1 unrepaired*/, weapons:[{id,ammo}], 
-  wins:0, races:0, kills:0, bestTimes:{[trackId]:seconds}, unlockedTracks:['scrapyard'] }
-// Track unlock: winning a race on a track unlocks the next in TRACKS order. Prize per track in track def.
+  wins:0, races:0, kills:0, bestTimes:{[trackId]:seconds}, passedTracks:[] }
+// Track pass: a top-three finish without a wreck passes the track; every track can be raced. Prize per track in track def.
 ```
 ### 3.1 Tracks & `core/trackModel.js` (A)
 ```js
