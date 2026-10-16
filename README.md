@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/icons/icon-512.png" width="128" alt="Last Track icon"></p>
 
-# Last Track  <small>v0.4.3</small>
+# Last Track  <small>v0.5.0</small>
 
 **[▶ Play it now: alexander-uspenskiy.github.io/lastrack](https://alexander-uspenskiy.github.io/lastrack/)**
 
@@ -34,3 +34,25 @@ WASD/arrows drive · Space fire · E/Tab cycle weapon · 1–9 select · Shift h
 ## Layout
 `src/core` `src/data` `src/sim` (pure, deterministic) · `src/render` `src/audio` · `src/ui` `src/game` — see `docs/ARCHITECTURE.md`.
 `tools/playtest.mjs` runs headless AI races for balance.
+
+
+## Analytics
+
+The published build reports a handful of anonymous, low-volume Google Analytics (GA4) events so we can see how the game is played and how it performs. No personal data and no user ids are sent; nothing is sent per frame, per shot or per hit.
+
+| Event | Params |
+|---|---|
+| `app_start` | version, quality, device (touch / desktop) |
+| `new_game`, `continue_game` | – |
+| `car_select` | car |
+| `paint_change` | paint, accent (sent once the choice settles) |
+| `track_select` | track |
+| `purchase` | item_type (weapon / ammo / upgrade / spikes / decal / repair), item_id, level, price, balance_after |
+| `race_start` | track, car, laps, field_size, mode, quality, weapons (e.g. `machinegun+guided`) |
+| `race_finish` | track, car, position, field_size, mode, time_s, kills, wrecked, prize, damage_pct, wrecks_total, quality, shots_<weapon> counts |
+| `race_quit` | track, car, lap, time_s |
+| `fps_report` | track, quality, fps_avg, frames (once per race) |
+| `settings_change` | key, value (quality, volumes, mute, hints, nameplates, camera) |
+| `error` | message (first line, 100 chars) |
+
+**Opt out:** turn off *Share anonymous usage stats* in Settings (stored on this device; it also sets GA consent to denied), or enable your browser's Do Not Track. **Localhost sends nothing**: the GA script is not even loaded there. For development, `?ga=debug` pushes the events onto `window.dataLayer` on localhost so they can be inspected; still nothing leaves the machine. The wrapper is `src/analytics.js`, payloads are built in `src/analyticsEvents.js`, and the wiring is `src/analyticsWiring.js`.
