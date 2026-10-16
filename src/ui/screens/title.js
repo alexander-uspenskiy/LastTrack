@@ -3,6 +3,7 @@ import { h, attachMenuKeys, fmtMoney } from '../dom.js';
 import { icon } from '../icons.js';
 import { getCar } from '../../data/cars.js';
 import { TRACKS } from '../../data/tracks/index.js';
+import { VERSION } from '../../version.js';
 
 /** Pure: one-line save summary for the Continue button. */
 export function saveSummary(save) {
@@ -41,7 +42,7 @@ export function createTitleScreen({ game, flow, openSettings }) {
       h('h1.logo', { 'aria-label': 'Last Track' }, h('span', 'LAST'), h('span.alt', 'TRACK')),
       h('p.tag', slice ? 'Hero slice — Hammer · Neon Loop' : 'Race for money. Race for your life.'),
       menu),
-    h('div.title-foot', keys, h('span.ver', 'v0.1 · three.js')));
+    h('div.title-foot', keys, h('span.ver', `v${VERSION} · three.js`)));
   let detach = null;
   return {
     el,

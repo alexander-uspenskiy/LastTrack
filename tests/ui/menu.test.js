@@ -95,3 +95,13 @@ test('animateCount counts up to the target and honours cancel', async () => {
   const el2 = { textContent: '' }; const stop = animateCount(el2, 50, { ms: 500 }); stop(); pump(10); pump(900); assert.equal(el2.textContent, '0');
   delete globalThis.requestAnimationFrame; delete globalThis.cancelAnimationFrame;
 });
+
+test('version constant matches package.json and the manifest is valid', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { VERSION } = await import('../../src/version.js');
+  const pkg = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8'));
+  assert.equal(VERSION, pkg.version);
+  const man = JSON.parse(readFileSync(new URL('../../manifest.webmanifest', import.meta.url), 'utf8'));
+  assert.equal(man.name, 'Last Track');
+  for (const i of man.icons) assert.ok(readFileSync(new URL('../../' + i.src, import.meta.url)).length > 500, i.src);
+});
