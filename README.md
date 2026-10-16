@@ -16,7 +16,7 @@ Built with [three.js](https://threejs.org) (vendored, r170) and vanilla ES modul
 |---|---|
 | ![Main menu](docs/images/menu.jpg) | ![Car select](docs/images/car-select.jpg) |
 | ![Garage](docs/images/garage.jpg) | ![Track select](docs/images/track-select.jpg) |
-| ![In-race HUD](docs/images/race-hud.jpg) | |
+|  |
 
 - **Play:** https://alexander-uspenskiy.github.io/lastrack/
 - Graphics quality: `?q=low|med|high` (or `G` in a race). `?slice=1` is kept as an alias of the normal game.
