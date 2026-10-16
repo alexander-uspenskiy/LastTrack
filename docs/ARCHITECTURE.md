@@ -23,7 +23,7 @@ MVP content (data-driven so more can be added later):
 - **DAG**: `core/` ← `data/` ← `sim/`; `render/`,`audio/` depend only on `core/`,`data/`,`three`; `ui/`,`game/`,`main.js` may depend on everything. `sim/` must not import `render/` and vice-versa (they share only the snapshot shape §5).
 - **Sim step**: fixed 120 Hz (`SIM_DT=1/120`) using `sim/fixedStep.js` (`advanceAccumulator`). Render via rAF, interpolated with `alpha`.
 - **Already provided (copied from CarRace, owned by A/B, may be edited)**: `core/{eventBus,mathUtil,vec2,storage}.js`, `sim/fixedStep.js`, `vendor/three.module.js`, `package.json` (test script uses the glob form `node --test "tests/**/*.test.js"`; tests live in `tests/<pkg>/*.test.js`, Node ≥ 22, `node:test`).
-- **Serving**: `npm run serve` → http://localhost:8000 (importmap + modules don't work on file://). `index.html` has `<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>` before `<script type="module" src="./src/main.js">`, `<link rel="icon" href="data:,">`, relative URLs only.
+- **Serving**: `npm run serve` → http://localhost:8123 (importmap + modules don't work on file://). `index.html` has `<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>` before `<script type="module" src="./src/main.js">`, `<link rel="icon" href="data:,">`, relative URLs only.
 - **Indexing**: `position`, `lap` are 1-based. `carId` is the 0-based index in `snapshot.cars` (player is always `0`).
 
 ## 2. Work packages & ownership (disjoint)
