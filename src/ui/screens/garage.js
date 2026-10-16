@@ -2,7 +2,6 @@ import { h, button, statBar, screenHeader, fmtMoney, attachMenuKeys, clear } fro
 import { getCar } from '../../data/cars.js';
 import { UPGRADES, upgradeCost, applyUpgrades } from '../../data/upgrades.js';
 import { repairCost } from '../../data/economy.js';
-import { contractLabel } from '../../data/contracts.js';
 import { uiHex } from '../colors.js';
 import { carSilhouette, setDamageZones } from '../icons.js';
 import { ringGeometry } from '../menuLogic.js';
@@ -30,7 +29,6 @@ export function createGarageScreen({ game, flow }) {
   const upgradesEl = h('div.upg-list');
   const bars = { speed: statBar('SPEED'), accel: statBar('ACCEL'), grip: statBar('GRIP'), armor: statBar('ARMOR') };
   const repairRow = h('div.repair-row');
-  const contractLine = h('p.contract-status.small');
   const diagram = h('div.diagram');
   let stageApi = null, detach = null;
 
@@ -74,8 +72,6 @@ export function createGarageScreen({ game, flow }) {
     }, 'btn-repair btn-small' + (bill > 0 ? ' btn-primary' : ''));
     rb.disabled = bill <= 0 || save.cash < bill;
     repairRow.append(h('span.muted.small', 'REPAIR BAY'), rb);
-    contractLine.textContent = save.contract ? 'CONTRACT · ' + contractLabel(save.contract) + ' · next race' : '';
-    contractLine.classList.toggle('hidden', !save.contract);
     const sil = carSilhouette(car.id); setDamageZones(sil, damageZones(save.damage));
     diagram.replaceChildren(sil, h('div', h('div.muted.small', 'HULL INTEGRITY'), h('div.dmg-pct', { style: { color: save.damage > 0.5 ? 'var(--red)' : save.damage > 0.2 ? 'var(--amber)' : 'var(--lime)' } }, Math.round((1 - save.damage) * 100) + '%')));
     const si = diagram.querySelector('svg'); if (si) si.classList.add('carsil');
@@ -85,14 +81,13 @@ export function createGarageScreen({ game, flow }) {
     screenHeader('THE GARAGE', 'Spend it before someone takes it from you.', cash),
     h('div.garage-body',
       h('div.garage-left', h('div.panel', carName, h('div.bars', Object.values(bars).map((b) => b.el))), h('div.panel', diagram)),
-      h('div.panel.garage-main', h('div.panel-title', 'UPGRADES'), upgradesEl, repairRow, contractLine, msg)),
+      h('div.panel.garage-main', h('div.panel-title', 'UPGRADES'), upgradesEl, repairRow, msg)),
     h('footer.screen-foot',
       button('MAIN MENU', () => flow.transition('title'), 'btn-back'),
       h('span.spacer'),
       button('PAINT & DECALS', () => flow.transition('paint'), 'btn-nav-paint'),
       button('ARMORY', () => flow.transition('shop'), 'btn-nav-shop'),
       button('DRIVERS', () => flow.transition('roster'), 'btn-nav-roster'),
-      button('CONTRACTS', () => flow.transition('contracts'), 'btn-nav-contracts'),
       button('TO THE TRACK', () => flow.transition('trackSelect'), 'btn-primary btn-nav-track')));
   return {
     el,

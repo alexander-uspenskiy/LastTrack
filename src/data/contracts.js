@@ -33,9 +33,3 @@ export function contractProgress(contract, kills = 0) {
   if (!contract) return '';
   return `WRECK ${Math.min(Math.max(0, kills | 0), contract.quota)}/${contract.quota}`;
 }
-/** Garage line: 'Federal Motor Corps · WRECK 1/2'. */
-export function contractLabel(contract, kills = 0) {
-  if (!contract) return '';
-  const p = getPatron(contract.patron);
-  return `${p ? p.org : 'CONTRACT'} · ${contractProgress(contract, kills)}`;
-}

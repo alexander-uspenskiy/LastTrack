@@ -217,8 +217,13 @@ body.no-hints .keys { display: none; }
 .ammo-meter { flex: 1; display: grid; gap: 3px; font-size: 11px; color: var(--text-dim); font-family: var(--font-mono); }
 .ammo-meter .bar-track { height: 5px; } .ammo-meter .bar-fill { background: linear-gradient(90deg, var(--amber), #ff7a5a); box-shadow: 0 0 8px rgba(255, 176, 46, .5); }
 
-/* ---------- contracts (the board) ---------- */
-.contracts-wrap { display: flex; flex-direction: column; gap: 14px; }
+/* ---------- race wizard: the bid (step 1 of race settings) ---------- */
+.wizard-step { font-family: var(--font-display); letter-spacing: .14em; font-size: 12px; text-transform: uppercase; color: var(--amber); }
+.wizard-step-body { display: flex; flex-direction: column; gap: 14px; }
+.wizard-step-body.hidden { display: none !important; }
+.bid-decline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.btn-decline.on { border-color: var(--lime); color: var(--lime); }
+.bid-line { margin: 12px 0 0; color: var(--text); font-size: 14px; line-height: 1.45; }
 .contract-active p { margin: 0; line-height: 1.45; }
 .contract-active .panel-title { margin-bottom: 6px; }
 .contract-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
@@ -232,7 +237,6 @@ body.no-hints .keys { display: none; }
 .contract-terms b { font-family: var(--font-display); font-size: 17px; font-variant-numeric: tabular-nums; }
 .contract-terms .good { color: var(--lime); }
 .contract-terms .bad { color: var(--red); }
-.contract-status { margin: 8px 0 0; color: var(--amber); letter-spacing: .08em; }
 
 /* ---------- roster ---------- */
 .roster-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }

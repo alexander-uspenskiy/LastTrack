@@ -34,7 +34,6 @@ import { createCarSelectScreen } from '../ui/screens/carSelect.js';
 import { createGarageScreen } from '../ui/screens/garage.js';
 import { createShopScreen } from '../ui/screens/shop.js';
 import { createRosterScreen } from '../ui/screens/roster.js';
-import { createContractsScreen } from '../ui/screens/contracts.js';
 import { createTrackSelectScreen } from '../ui/screens/trackSelect.js';
 import { createRaceSettingsScreen } from '../ui/screens/raceSettings.js';
 import { createLoadingScreen } from '../ui/screens/loading.js';
@@ -101,7 +100,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
   try { audio = safe(createAudioEngine(), reportError); } catch (e) { reportError(e); }
 
   const flow = createFlowMachine({ initial: 'title' });
-  let raceSetup = { trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', practiceRivals: false };
+  let raceSetup = { trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', practiceRivals: false, bid: null };   // bid: patron id the wizard offered, taken at START
   let sim = null, controller = null, track = null, config = null;
   let snapA = null, snapB = null, acc = 0, endTimer = 0, wreckTimer = 0, finalized = false;
   let lastResult = null;
@@ -130,7 +129,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
     getSave: () => saveData,
     setSave: (s) => commit(s),
     hasSavedGame: () => store.exists(),
-    newGame() { saveData = store.reset(); bus.emit('game:new'); raceSetup = { ...raceSetup, trackId: SLICE_TRACK_ID, laps: 3, mode: 'race' }; return saveData; },
+    newGame() { saveData = store.reset(); bus.emit('game:new'); raceSetup = { ...raceSetup, trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', bid: null }; return saveData; },
     chooseCar(carId) {
       const r = economy.chooseCar(saveData, carId);
       if (!r.ok) throw new Error('chooseCar: ' + r.error);
@@ -164,7 +163,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
       saveData = store.reset();
       const r = economy.chooseCar(saveData, 'hammer');
       if (r.ok) saveData = r.save;
-      raceSetup = { trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', practiceRivals: false };
+      raceSetup = { trackId: SLICE_TRACK_ID, laps: 3, mode: 'race', practiceRivals: false, bid: null };
       return flow.force('loading');
     },
     /** The player's resolved livery for a car (default: the saved car). Used by every 3D preview. */
@@ -244,7 +243,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
   const ctx = { game, flow, bus, openSettings: () => sheet.open() };
   const screens = {
     title: createTitleScreen(ctx), carSelect: createCarSelectScreen(ctx), garage: createGarageScreen(ctx),
-    shop: createShopScreen(ctx), roster: createRosterScreen(ctx), contracts: createContractsScreen(ctx), trackSelect: createTrackSelectScreen(ctx),
+    shop: createShopScreen(ctx), roster: createRosterScreen(ctx), trackSelect: createTrackSelectScreen(ctx),
     raceSettings: createRaceSettingsScreen(ctx), loading: createLoadingScreen(ctx), paused: createPauseScreen(ctx),
     results: createResultsScreen(ctx), paint: createPaintScreen(ctx),
   };

@@ -1,10 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { CONTRACT_PATRONS, CONTRACT_MAX_QUOTA, offersFor, quotaFor, contractProgress, contractLabel } from '../../src/data/contracts.js';
+import { CONTRACT_PATRONS, CONTRACT_MAX_QUOTA, offersFor, quotaFor, contractProgress } from '../../src/data/contracts.js';
 import { acceptContract, settleContract } from '../../src/data/economy.js';
 import { defaultSave, createSaveStore, SAVE_KEY } from '../../src/data/saveStore.js';
 import { createMemoryStorage } from '../../src/core/storage.js';
-import { createFlowMachine } from '../../src/ui/flowMachine.js';
 
 const military = CONTRACT_PATRONS.find((p) => p.id === 'military');
 const mafia = CONTRACT_PATRONS.find((p) => p.id === 'mafia');
@@ -66,13 +65,12 @@ test('practice and no-contract races leave everything alone', () => {
   assert.equal(none.settled, null);
 });
 
-test('HUD progress caps at the quota; garage label names the patron', () => {
+test('HUD progress caps at the quota', () => {
   const c = { patron: 'mafia', quota: 2 };
   assert.equal(contractProgress(c, 0), 'WRECK 0/2');
   assert.equal(contractProgress(c, 1), 'WRECK 1/2');
   assert.equal(contractProgress(c, 9), 'WRECK 2/2');
   assert.equal(contractProgress(null, 4), '');
-  assert.equal(contractLabel(c, 1), 'Lantern Street · WRECK 1/2');
 });
 
 test('save: a valid contract survives a round trip; malformed ones are dropped', () => {
@@ -88,10 +86,3 @@ test('save: a valid contract survives a round trip; malformed ones are dropped',
   assert.equal(defaultSave().contract, null);
 });
 
-test('flow: the board opens from the garage and returns to it', () => {
-  const f = createFlowMachine({ initial: 'garage' });
-  assert.equal(f.transition('contracts'), true);
-  assert.equal(f.transition('garage'), true);
-  assert.equal(f.canTransition('contracts'), true);
-  assert.equal(createFlowMachine({ initial: 'contracts' }).canTransition('race'), false);
-});
