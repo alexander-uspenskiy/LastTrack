@@ -360,7 +360,7 @@ export function createHud({ root, getWeapon = (id) => ({ name: id }) } = {}) {
           const face = coracerFace(c);
           return h('div.hud-row' + (c.isPlayer ? '.me' : '') + (c.wrecked ? '.dead' : '') + (c.finished ? '.fin' : ''),
             h('b', String(c.position ?? i + 1)), h('i.hud-chip', { style: { background: c.livery ? '#' + (c.livery.paintHex >>> 0).toString(16).padStart(6, '0') : carChip(c.color) } }), h('span', c.name),
-            ...(c.isPlayer ? [] : [icon(FACE_ICON[face], { size: 13, cls: 'hud-face ' + face })]));
+            ...(c.isPlayer ? [] : [icon(FACE_ICON[face], { size: 16, cls: 'hud-face ' + face })]));
         }));
       }
 
