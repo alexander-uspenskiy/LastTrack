@@ -4,8 +4,8 @@ A browser vehicular-combat racer inspired by the 1990s *Deathtrack*: race rival 
 
 Built with [three.js](https://threejs.org) (vendored, r170) and vanilla ES modules; no bundler.
 
-- **Play:** https://alexanderuspenskiy.online/lastrack/
-- **Hero Slice** (photoreal, futuristic Hammer vs 4 enemy Hammers on the Neon Loop test track): https://alexanderuspenskiy.online/lastrack/?slice=1 (`&q=low|med|high` for quality)
+- **Play:** https://alexander-uspenskiy.github.io/lastrack/
+- **Hero Slice** (photoreal, futuristic Hammer vs 4 enemy Hammers on the Neon Loop test track): https://alexander-uspenskiy.github.io/lastrack/?slice=1 (`&q=low|med|high` for quality)
 - **Trailer:** `trailer/out/last-track-trailer-web.mp4` (built with HyperFrames; the score is synthesized procedurally by `tools/music/`)
 
 ## Run locally
