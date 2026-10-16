@@ -87,6 +87,8 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
   let pbr = null, envKind = 'showroom';
   if (host) { try { pbr = attachPBR(host, { quality: quality || readQuality(typeof location !== 'undefined' ? location.search : '', typeof localStorage !== 'undefined' ? localStorage : null), env: envKind }); } catch (e) { reportError(e); } }
   const setEnv = (k) => { if (pbr && envKind !== k) { envKind = k; try { pbr.setEnv(k); } catch (e) { reportError(e); } } };
+  // each race gets its track's sky (look.env, e.g. Foundry Run's furnace sky); the city dusk otherwise
+  const raceEnv = () => (getTrack(raceSetup.trackId) || {}).look?.env || 'dusk';
   // player settings live in real localStorage even when the save is in-memory (?fresh=1 / slice)
   const settingsStorage = getDefaultStorage();
   let settings = loadSettings(settingsStorage);
@@ -329,7 +331,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
       }
       const menu3d = !!stage && MENU_3D.has(to);
       if (stage) { if (menu3d) { setEnv('showroom'); stage.show(); } else stage.hide(); }
-      if (to === 'loading' || inRaceState(to)) setEnv('dusk');
+      if (to === 'loading' || inRaceState(to)) setEnv(raceEnv());
       if (to === 'title') document.body.classList.remove('racing');
       document.body.classList.toggle('racing', inRaceState(to));
       document.body.classList.toggle('scene3d', menu3d);
