@@ -1,7 +1,7 @@
 // Arcade-shooter 2D car dynamics. Pure module: no three, no DOM. Heading θ: forward (cos θ, sin θ), +θ turns right (+d side).
 // Base: engine (gears, torque curve, rev limiter), friction-limited braking, longitudinal weight transfer, slip-angle grip
 // curve, rear-axle oversteer, surfaces. Arcade layer on top: high forgiving grip, speed-sensitive steering, a drift state
-// (handbrake / hard lock kick the tail out), auto counter-steer that recovers the slide on its own, mild auto-straighten,
+// (Shift drift / hard lock kick the tail out), auto counter-steer that recovers the slide on its own, mild auto-straighten,
 // straight-line speed boost and an optional nitro (input.nitro, charge + cooldown). Deterministic: no Math.random, no clock.
 import { clamp, wrapAngle } from '../core/mathUtil.js';
 
@@ -20,7 +20,7 @@ export const TUNING = {
   steerRate: 12,        // 1/s input smoothing
   steerReturn: 20,      // 1/s centring speed when the stick is released (mild auto-straighten)
   drag: 0.02, roll: 0.35,
-  handbrakeGrip: 0.42, handbrakeDecel: 7,
+  handbrakeGrip: 0.42,  // rear grip while Shift drifts; no braking term, so the slide keeps its speed
   slideDrag: 0.05,      // speed lost per unit of lateral velocity scrubbed (drifts keep their speed)
   reverseMax: 8, reverseAccel: 6,
   tyreGripMult: 0.5, tyreSpeedMult: 0.7,
@@ -116,7 +116,7 @@ export function gearFor(u, maxSpeed, gear) {
 }
 
 /**
- * Pure: the drift-kick target (0..1) for an input at a forward speed. Handbrake = full kick; a hard lock at speed = a
+ * Pure: the drift-kick target (0..1) for an input at a forward speed. Shift (`handbrake` input) = full kick; a hard lock at speed = a
  * partial one that ramps in over the last 28 % of the stick travel. `kick` (0..1) scales it (AI cars pass 0).
  */
 export function driftTarget(steer, u, handbrake, throttle, kick = 1) {
@@ -186,7 +186,7 @@ export function stepBody(b, input, dt, mods = {}) {
   const speedMult = (mods.speedMult ?? 1) * (1 + T.straightBoost * b.boost) * (b.nitroOn ? T.nitroSpeed : 1);
   const accelBoost = accelMult * (b.nitroOn ? T.nitroAccel : 1);
 
-  // ---- drift state: the tail is kicked out by the handbrake or a hard lock at speed, released smoothly
+  // ---- drift state: the tail is kicked out by Shift (drift) or a hard lock at speed, released smoothly
   const hard = Math.abs(b.steer) > T.driftSteer && u > T.driftSpeed;
   b.lockT = hard ? b.lockT + dt : Math.max(0, b.lockT - dt * 2);
   const sustain = handbrake ? 1 : clamp((b.lockT - T.driftHold[0]) / (T.driftHold[1] - T.driftHold[0]), 0, 1);
@@ -259,7 +259,6 @@ export function stepBody(b, input, dt, mods = {}) {
     a -= (T.drag * u + T.roll) + (mods.dragExtra || 0) * u;
     if (u > vmax) a -= (u - vmax) * 3;
     a -= brakeDecel;
-    if (handbrake) a -= T.handbrakeDecel;
   } else if (u < -0.3) {
     a += T.reverseAccel;           // rolling stop
   }

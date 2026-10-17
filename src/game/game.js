@@ -390,7 +390,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
       const { steps, acc: a } = advanceAccumulator(acc, dt * ts, SIM_HZ);
       acc = a;
       const inp = input.read();
-      inp.nitro = inp.nitro || input.pressed.has('KeyF') || input.pressed.has('KeyX');   // nitro: F / X (Shift stays the handbrake)
+      inp.nitro = inp.nitro || input.pressed.has('KeyF') || input.pressed.has('KeyX');   // nitro: F / X (Shift is the drift key)
       let events = [];
       for (let i = 0; i < steps; i++) {
         sim.step(inp);

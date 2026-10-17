@@ -134,6 +134,16 @@ function carAtWall(speed, angle, d = 5.5) {
 test('wall damage has a clear threshold and scales above it', () => {
   assert.equal(wallDamage(0), 0); assert.equal(wallDamage(WALL.dmgMin), 0); assert.equal(wallDamage(WALL.dmgMin - 0.1), 0);
   assert.ok(wallDamage(WALL.dmgMin + 5) > 0 && wallDamage(WALL.dmgMin + 15) > wallDamage(WALL.dmgMin + 5) * 2.5);
+  assert.ok(wallDamage(WALL.dmgMin + 20) < 10, `a hard bump costs under 10 armor: ${wallDamage(WALL.dmgMin + 20)}`);
+});
+
+test('Shift drift slides through a corner and keeps its speed (no handbrake stop)', () => {
+  for (const id of ['hammer', 'wasp', 'bulwark']) {
+    const b = car(35, { ...getCar(id).base }); let peak = 0;
+    run(b, { throttle: 0.3, steer: 0.6, handbrake: true }, 2, (bb) => { peak = Math.max(peak, Math.abs(beta(bb))); });
+    assert.ok(peak > 0.3 && peak < 0.75, `${id} drift slip ${peak.toFixed(2)}`);
+    assert.ok(b.speed > 0.8 * 35, `${id} kept its speed: ${b.speed.toFixed(1)} m/s`);
+  }
 });
 
 test('glancing wall hits deflect along the wall with little speed loss and no damage', () => {

@@ -1,6 +1,6 @@
 <p align="center"><img src="assets/icons/icon-512.png" width="128" alt="Last Track icon"></p>
 
-# Last Track  <small>v0.9.0</small>
+# Last Track  <small>v0.10.0</small>
 
 **[▶ Play it now: alexander-uspenskiy.github.io/LastTrack](https://alexander-uspenskiy.github.io/LastTrack/)**
 
@@ -41,7 +41,7 @@ npm test
 ```
 
 ## Controls
-WASD/arrows drive · Space fire · E/Tab cycle weapon · 1–9 select · Shift handbrake · C camera · P pause · M mute
+WASD/arrows drive · Space fire · E/Tab cycle weapon · 1–9 select · Shift drift · C camera · P pause · M mute
 
 ## Layout
 `src/core` `src/data` `src/sim` (pure, deterministic) · `src/render` `src/audio` · `src/ui` `src/game` — see `docs/ARCHITECTURE.md`.

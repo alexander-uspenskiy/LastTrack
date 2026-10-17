@@ -16,7 +16,7 @@ export function keysToInput(pressed) {
     fire: pressed.has('Space'),
     cycleWeapon: false,
     selectWeapon: null,
-    handbrake: has(pressed, 'ShiftLeft', 'ShiftRight'),
+    handbrake: has(pressed, 'ShiftLeft', 'ShiftRight'),   // Shift = drift (the field keeps its old name)
   };
 }
 

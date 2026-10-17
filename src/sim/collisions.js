@@ -11,7 +11,7 @@ export const WALL = {
   friction: 0.15,    // wall friction coefficient: tangential speed lost = friction * normal speed absorbed
   align: 6,          // 1/s: the nose swings along the wall while in contact
   dmgMin: 9,         // m/s of impact (normal) speed below which a wall does no damage
-  dmgK: 0.9,         // armor points per m/s above the threshold
+  dmgK: 0.45,        // armor points per m/s above the threshold (halved: a wall bump costs about half the armor it did)
 };
 const CIRCLE_OFFSETS = [1.3, -1.3];
 export const CIRCLE_R = 1.1;
