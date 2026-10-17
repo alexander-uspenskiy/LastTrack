@@ -1,5 +1,5 @@
 // Procedural HDR environments (equirect Float32 RGBA): 'dusk' dystopian-city sky for the race, 'forge' smoke-and-furnace sky for
-// Foundry Run, 'dust' red-dust sunset over a hazy skyline for Daylite, 'showroom' studio with softboxes.
+// Foundry Run, 'dust' bright hazy daylight over a skyline for Daylite, 'showroom' studio with softboxes.
 // Node-safe data builders; envTextures() wraps + PMREM-filters them on a real renderer.
 import * as THREE from 'three';
 import { mulberry32 } from '../../core/mathUtil.js';
@@ -10,7 +10,7 @@ const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a
 
 export const SUN_ELEV = 0.13, SUN_AZ = 2.2;       // rad (sun low in the west)
 export const FORGE_SUN_ELEV = 0.16;               // Foundry Run's low sun; matches look.sunElev in data/tracks/testTrack.js
-export const DUST_SUN_ELEV = 0.09;                // Daylite's sunset, just above the haze; matches look.sunElev in data/tracks/testTrack.js
+export const DUST_SUN_ELEV = 0.09;                // Daylite's low afternoon sun, just above the haze; matches look.sunElev in data/tracks/testTrack.js
 /** Direction (unit) the key light comes FROM, in world space for sunDir(elev). */
 export function sunDir(elev = SUN_ELEV) { const c = Math.cos(elev); return [Math.cos(SUN_AZ) * c, Math.sin(elev), Math.sin(SUN_AZ) * c]; }
 
@@ -65,17 +65,17 @@ export function buildEnvData(kind = 'dusk', w = 512, h = 256, seed = 4) {
         if (lat < 0) { const f = smooth(0, -0.4, lat); c = [mix(c[0] * 0.5, 0.05, f), mix(c[1] * 0.4, 0.03, f), mix(c[2] * 0.4, 0.024, f)]; }
         if (lat < stk[x] && lat >= 0) c = stkTip[x] && Math.abs(lat - stk[x]) < 0.014 ? [6, 1.6, 0.4] : [0.012, 0.01, 0.011];   // warning lights on the stack tops
       } else if (kind === 'dust') {
-        // Daylite: a sunset in red dust. Ember horizon fading through dusty rose to a dim mauve zenith; the sun sits low behind
-        // a hazy skyline, and drifting dust bands streak the sky
+        // Daylite: a bright hazy afternoon over the harbour. A white-gold haze at the horizon fading to a clear sky blue, the sun
+        // high and white behind the towers, a faint dust warmth in the haze, and the skyline lit by the sky in atmospheric perspective
         const e = Math.max(0, lat);
-        const hor = [3.4, 1.05, 0.34], rose = [0.95, 0.36, 0.22], mid = [0.36, 0.14, 0.16], top = [0.08, 0.07, 0.11];
-        c = e < 0.1 ? mix3(hor, rose, smooth(0, 0.1, e)) : e < 0.45 ? mix3(rose, mid, smooth(0.1, 0.45, e)) : mix3(mid, top, smooth(0.45, 1, e));
-        const streak = 1 - 0.24 * smooth(0, 0.3, e) * (0.5 + 0.5 * Math.sin(lon * 9 + 3 * Math.sin(lat * 14)));
+        const hor = [2.0, 1.9, 1.75], haze = [1.1, 1.25, 1.5], blue = [0.3, 0.55, 1.15], top = [0.22, 0.44, 0.88];   // lower radiance keeps the blue through tone mapping and bloom
+        c = e < 0.12 ? mix3(hor, haze, smooth(0, 0.12, e)) : e < 0.5 ? mix3(haze, blue, smooth(0.04, 0.32, e)) : mix3(blue, top, smooth(0.5, 1, e));
+        const streak = 1 - 0.08 * smooth(0, 0.3, e) * (0.5 + 0.5 * Math.sin(lon * 9 + 3 * Math.sin(lat * 14)));
         const cs = dx * sd[0] + dy * sd[1] + dz * sd[2], ang = Math.acos(Math.min(1, cs));
-        const sun = Math.exp(-ang * ang * 3000) * 70 + Math.exp(-ang * ang * 22) * 2.4 + Math.exp(-ang * 2.6) * 0.9;   // disc, halo, dust scatter
-        c = [c[0] * streak + sun, c[1] * streak + sun * 0.55, c[2] * streak + sun * 0.22];
-        if (lat < dsk[x] && lat >= 0) c = r() < 0.05 ? [2.2, 1.1, 0.35] : [0.09, 0.05, 0.06];   // skyline silhouette, a few lit windows
-        if (lat < 0) { const f = smooth(0, -0.25, lat); c = [mix(c[0] * 0.45, 0.1, f), mix(c[1] * 0.35, 0.05, f), mix(c[2] * 0.35, 0.04, f)]; }
+        const sun = Math.exp(-ang * ang * 3000) * 40 + Math.exp(-ang * ang * 22) * 1.6 + Math.exp(-ang * 2.6) * 0.6;   // disc, halo, haze glow
+        c = [c[0] * streak + sun, c[1] * streak + sun * 0.95, c[2] * streak + sun * 0.85];
+        if (lat < dsk[x] && lat >= 0) c = [0.38, 0.4, 0.46];   // skyline silhouette: distant towers washed out by the haze
+        if (lat < 0) { const f = smooth(0, -0.25, lat); c = [mix(c[0] * 0.6, 0.3, f), mix(c[1] * 0.6, 0.27, f), mix(c[2] * 0.6, 0.24, f)]; }
       } else {
         // dusk: warm horizon -> violet -> deep blue; low sun; dystopian skyline with neon; wet dark ground
         const e = Math.max(0, lat);

@@ -435,7 +435,7 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
   const fx = WHEELS.front * V.sx, rx = WHEELS.rear * V.sx, tz = WHEELS.track * V.sz, WR = WHEELS.radius * V.ws;
   const slots = [[fx, tz, 1, true], [fx, -tz, -1, true], [rx, tz, 1, false], [rx, -tz, -1, false]];
 
-  const S = { pitch: 0, pitchV: 0, roll: 0, rollV: 0, heave: 0, heaveV: 0, spin: 0, dentKey: '', stage: 0, turretYaw: 0, turretPitch: 0, flap: 0.2, heat: 0, t: 0, brakeOn: null, charred: false, lost: {} };
+  const S = { pitch: 0, pitchV: 0, roll: 0, rollV: 0, heave: 0, heaveV: 0, spin: 0, dentKey: '', stage: 0, turretYaw: 0, turretPitch: 0, flap: 0.2, heat: 0, t: 0, brakeOn: null, charred: false, lost: {}, glassOk: true, cockpit: false };
   const dummy = new THREE.Object3D(), tmp = new THREE.Matrix4(), qa = new THREE.Quaternion();
   const charredCol = new THREE.Color(0x0c0b0a), paintCol = new THREE.Color(color), accentC = new THREE.Color(accent);
 
@@ -508,7 +508,7 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
       S.dentKey = key;
       if (look.stage !== S.stage) {
         S.stage = look.stage;
-        hood.visible = look.hood; bay.visible = !look.hood; plates.visible = look.plates && V.plates !== false; glass.visible = look.glass; heads.visible = tails.visible = look.lights; under.visible = decal.visible = look.lights;
+        hood.visible = look.hood; bay.visible = !look.hood; plates.visible = look.plates && V.plates !== false; S.glassOk = look.glass; glass.visible = S.glassOk && !S.cockpit; heads.visible = tails.visible = look.lights; under.visible = decal.visible = look.lights;
         const charred = look.charred; if (charred !== S.charred) { S.charred = charred; mats.paint.color.copy(charred ? charredCol : paintCol); mats.paint.clearcoat = charred ? 0 : finish.clearcoat; mats.paint.roughness = charred ? 0.9 : finish.roughness; mats.paint.metalness = charred ? 0.1 : finish.metalness; mats.paint.normalScale.setScalar(charred ? 0 : 0.13); }
         fire.visible = look.fire; disp.visible = look.lights;
         uni.uDecalOn.value = decalOn && !S.charred ? 1 : 0; if (roofDecal) roofDecal.visible = hasRoof && look.stage < 4;
@@ -565,6 +565,12 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
     spikeRig,
     rig,
     setPartLost(part, lost = true) { S.lost[part] = !!lost; },
+    /** Cockpit view: the driver looks out through the glass, so the canopy is hidden for the followed car (and back when not). */
+    setCockpit(on) {
+      if (!!on === !!S.cockpit) return;
+      S.cockpit = !!on;
+      glass.visible = S.glassOk && !S.cockpit;
+    },
     get lostParts() { return Object.keys(S.lost).filter((k) => S.lost[k]); },
     get stage() { return S.stage; },
     variant: carId, muzzle: carMuzzle(carId),

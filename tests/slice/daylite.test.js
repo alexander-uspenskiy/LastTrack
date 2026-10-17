@@ -9,7 +9,7 @@ import { buildEnvData, DUST_SUN_ELEV } from '../../src/render/pbr/env.js';
 
 const DAYLITE = GAME_TRACKS.find((t) => t.id === 'daylite');
 
-test('daylite declares the manhattan kit, the red-dust sky and a sunset sun', () => {
+test('daylite declares the manhattan kit, the hazy daylight sky and a low afternoon sun', () => {
   assert.equal(GAME_TRACKS[2], DAYLITE, 'unlocks after Foundry Run');
   assert.equal(DAYLITE.look.kit, 'manhattan');
   assert.equal(DAYLITE.look.env, 'dust');
@@ -45,13 +45,15 @@ test('the Statue of Liberty: a 47 m pedestal under a 46 m statue, torch tip at 9
   assert.ok(s.glow.triCount > 0, 'the torch burns');
 });
 
-test('dust sky: a red sunset above the haze, a dim mauve zenith, and a sun disc', () => {
+test('dust sky: a bright hazy daylight band above the skyline, a clear blue zenith, and a sun disc', () => {
   const w = 256, h = 128, d = buildEnvData('dust', w, h, 9);
   for (let i = 0; i < d.length; i++) assert.ok(Number.isFinite(d[i]), 'finite radiance');
   const px = (y) => { const out = []; for (let x = 0; x < w; x++) { const i = (y * w + x) * 4; out.push([d[i], d[i + 1], d[i + 2]]); } return out; };
-  const reds = px(h / 2 - 8).filter((p) => p[0] > 2 * p[1] && p[0] > 2 * p[2]).length;
-  assert.ok(reds > w * 0.7, `red sunset band (${reds}px)`);
-  assert.ok(px(2).every((p) => Math.max(...p) < 0.3), 'the zenith stays dim mauve');
+  const lum = (p) => 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2];
+  const band = px(h / 2 - 8);
+  const bright = band.filter((p) => lum(p) > 0.6).length;
+  assert.ok(bright > w * 0.7, `bright daylight band (${bright}px)`);
+  assert.ok(px(2).every((p) => p[2] > p[0] && lum(p) > 0.3), 'the zenith is a clear sky blue, not dark');
   let peak = 0; for (let i = 0; i < d.length; i += 4) peak = Math.max(peak, d[i]);
   assert.ok(peak > 20, `the sun disc is bright (${peak})`);
 });

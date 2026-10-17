@@ -14,8 +14,10 @@ export function stageCamera(mode, t, { yaw = 0, pitch = 0, dist = 1 } = {}) {
     const a = 0.55 + t * 0.11 + yaw, r = 13.6 * dist;
     return { x: Math.sin(a) * r, y: 1.5 + Math.sin(t * 0.21) * 0.3 + pitch * 4, z: Math.cos(a) * r, lx: 0, ly: 0.75, lz: 0, fov: 34, turn: 0 };
   }
-  const r = (mode === 'garage' ? 13 : 11.2) * dist, a = 0.62 + yaw;
-  return { x: Math.sin(a) * r, y: 2.6 + pitch * 6, z: Math.cos(a) * r, lx: 0, ly: 0.7, lz: 0, fov: mode === 'garage' ? 34 : 33, turn: 0.45 };
+  // armory: closer and a touch higher, so the missile hardware on the roof and flanks reads at a glance
+  const armory = mode === 'armory';
+  const r = (mode === 'garage' ? 13 : armory ? 10.6 : 11.2) * dist, a = 0.62 + yaw;
+  return { x: Math.sin(a) * r, y: (armory ? 3.1 : 2.6) + pitch * 6, z: Math.cos(a) * r, lx: 0, ly: 0.7, lz: 0, fov: mode === 'garage' ? 34 : 33, turn: 0.45 };
 }
 
 const mkCanvas = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
@@ -59,7 +61,7 @@ function coneMaterial(color) {
 
 /**
  * createMenuScene(host, { canvas }) -> { show(), hide(), update(dt), setCar({carId,color,upgrades}), setMode(mode, {side}), setParallax(x,y), setQuality(name), dispose(), shown }
- * modes: 'title' (orbiting camera), 'showcase' (car select turntable), 'garage'. side: +1 car on the right half, -1 left, 0 centred.
+ * modes: 'title' (orbiting camera), 'showcase' (car select turntable), 'garage', 'armory' (the shop: closer, car clear of the panel). side: +1 car on the right half, -1 left, 0 centred.
  */
 export function createMenuScene(host, { canvas = null } = {}) {
   const scene = host.scene, cam = host.camera, renderer = host.renderer;
@@ -216,7 +218,7 @@ export function createMenuScene(host, { canvas = null } = {}) {
       curSide += (side - curSide) * Math.min(1, dt * 4);
       renderer.getSize(sz);
       const w = sz.x, hgt = sz.y, wide = w / Math.max(1, hgt) > 1.35;
-      const off = wide ? -curSide * w * (mode === 'title' ? 0.2 : mode === 'garage' ? 0.08 : 0.22) : 0;
+      const off = wide ? -curSide * w * (mode === 'title' ? 0.2 : mode === 'garage' ? 0.08 : mode === 'armory' ? 0.3 : 0.22) : 0;
       if (Math.abs(off) > 0.5 || cam.view) cam.setViewOffset(w, hgt, off, 0, w, hgt); else cam.updateProjectionMatrix();
       const fl = 0.5 + 0.5 * Math.sin(t * 0.7); dust.rotation.y = t * 0.02;
       const pos = dgeo.attributes.position; for (let i = 0; i < N; i++) { let y = pos.getY(i) + dt * (0.12 + (i % 5) * 0.03); if (y > 9) y = 0; pos.setY(i, y); } pos.needsUpdate = true;

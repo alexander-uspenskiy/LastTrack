@@ -54,9 +54,9 @@ export const DAYLITE = {
   theme: { ground: 5, road: 0, curb: [9, 7], sky: [9, 2], scenery: 'skyline' },
   look: {
     kit: 'manhattan', env: 'dust', seed: 233,         // prop kit (render/pbr/manhattan.js) and sky (render/pbr/env.js)
-    fog: 0x8a4a34, fogDensity: 0.0028, key: 0xff9a5a, keyIntensity: 1.9, bgIntensity: 0.4,
-    sunElev: 0.09,                                    // sunset; = DUST_SUN_ELEV in render/pbr/env.js
-    hemi: 0xa0603c, hemiGround: 0x3a2418, ground: 0x5a4236,
+    fog: 0xc3bdb2, fogDensity: 0.0028, key: 0xfff0dc, keyIntensity: 1.9, bgIntensity: 1.25,   // bright daylight haze; bgIntensity is the sky's own brightness
+    sunElev: 0.09,                                    // low afternoon sun; = DUST_SUN_ELEV in render/pbr/env.js
+    hemi: 0x9fb4cc, hemiGround: 0x4a4238, ground: 0x6e6257,
   },
   control: [
     [60, 0], [150, -4], [250, -2], [320, 14], [366, 50], [388, 120],     // start straight, SE sweep

@@ -4,7 +4,15 @@ import { clamp, lerp, smoothstep, angleDiff, wrapAngle } from './geomUtil.js';
 
 export const CAMERA_MODES = ['chase', 'cockpit', 'bumper', 'tv', 'top'];
 export const CHASE = Object.freeze({ back: 8, up: 3, lookAhead: 7, lookUp: 0.9, rate: 5, fovBase: 62, fovPerSpeed: 0.18, fovMax: 85 });
-export const COCKPIT = Object.freeze({ x: 0.1, y: 1.0, fov: 78 });
+// The driver's eye per car: on the seat's station (x ≈ -0.55, the seat in render/pbr/heroCarPBR.js interior()), about 0.2 m under the
+// canopy there (render/pbr/carBody.js, scaled by the variant's sy: Wasp 1.11 m, Hammer 1.46 m, Bulwark 1.89 m). The dash and wheel sit
+// ahead of the seat, so the eye is behind them. The Wasp is low and the Bulwark high, so one eye height cannot fit all three.
+export const COCKPITS = Object.freeze({
+  wasp: Object.freeze({ x: -0.55, y: 0.91, fov: 74 }),
+  hammer: Object.freeze({ x: -0.55, y: 1.26, fov: 76 }),
+  bulwark: Object.freeze({ x: -0.55, y: 1.69, fov: 78 }),
+});
+export const cockpitFor = (carId) => COCKPITS[carId] || COCKPITS.hammer;
 export const BUMPER = Object.freeze({ x: 2.45, y: 0.62, fov: 84 });
 export const TV = Object.freeze({ ahead: 52, side: 13, height: 3.6, minBehind: -6, maxDist: 95 });
 export const TOP = Object.freeze({ height: 70, perSpeed: 0.5, lookAhead: 0.5, fov: 45 });
@@ -37,7 +45,12 @@ export class CameraRig {
     this._has = false; this._lastFov = -1; this._prev = null;
     this._q2 = new THREE.Quaternion(); this._zAxis = new THREE.Vector3(0, 0, 1);
     this.shake = 0; this._tv = null; this._tvSide = 1; this._roll = 0;
+    this.carId = 'hammer';   // the followed car's model: picks its cockpit (see COCKPITS)
   }
+  /** The followed car's model (wasp / hammer / bulwark). Set every frame, so a spectated rival gets its own cockpit. */
+  setCarId(carId) { this.carId = carId || 'hammer'; }
+  /** True while the cockpit view is up, so the followed car can hide its canopy glass. */
+  isCockpit() { return this._kind === 'cockpit'; }
   /** Camera shake (0..1.5): hits, explosions, kerbs. Decays on its own. */
   addShake(a) { this.shake = Math.min(1.5, this.shake + a); }
   snap() { this.hsInit = false; this.trans = 0; this._kind = ''; this._has = false; this._prev = null; }
@@ -78,11 +91,12 @@ export class CameraRig {
       this.hs = smoothAngle(this.hs, hd, CHASE.rate, dt);
     } else if (kind === 'cockpit') {
       this.hs = hd;
-      carFrameToWorld(this._v, car.x, car.y, hd, COCKPIT.x, 0, COCKPIT.y);
+      const eye = cockpitFor(this.carId);
+      carFrameToWorld(this._v, car.x, car.y, hd, eye.x, 0, eye.y);
       tp.set(this._v.x, this._v.y, this._v.z);
       const yaw = hd + clamp(car.steer || 0, -1, 1) * 0.06;
-      tl.set(tp.x + Math.cos(yaw) * 30, COCKPIT.y - 0.12, tp.z + Math.sin(yaw) * 30);
-      fov = COCKPIT.fov + Math.min(10, speed * 0.1);
+      tl.set(tp.x + Math.cos(yaw) * 30, eye.y - 3, tp.z + Math.sin(yaw) * 30);   // pitched down ~6°: the horizon in the upper part, the dash and wheel below it
+      fov = eye.fov + Math.min(10, speed * 0.1);
     } else if (kind === 'bumper') {
       this.hs = hd;
       carFrameToWorld(this._v, car.x, car.y, hd, BUMPER.x, 0, BUMPER.y);

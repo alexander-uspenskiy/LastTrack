@@ -76,7 +76,7 @@ export function createShopScreen({ game, flow }) {
     h('footer.screen-foot', button('BACK', () => flow.transition('garage'), 'btn-back'), h('span.spacer'), button('DRIVERS', () => flow.transition('roster'))));
   return {
     el,
-    show() { detach = attachMenuKeys(el); say(''); render(); stageApi = useStage(game, el, { side: -1, mode: 'garage' }); const s = game.getSave(); stageApi.show({ carId: s.carId, color: getCar(s.carId).color, upgrades: s.upgrades }); },
+    show() { detach = attachMenuKeys(el); say(''); render(); stageApi = useStage(game, el, { side: -1, mode: 'armory' }); const s = game.getSave(); stageApi.show({ carId: s.carId, color: getCar(s.carId).color, upgrades: s.upgrades }); },
     hide() { detach?.(); stageApi?.hide(); stageApi = null; },
   };
 }

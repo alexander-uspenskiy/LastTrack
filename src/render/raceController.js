@@ -116,6 +116,8 @@ export function createRaceController(host, track, config = {}) {
   }
   const effects = createEffects(root, { soft: pbrMode || (!heroTrack && !!host.pbr) });
   const rig = new CameraRig(host.camera);
+  // the model of the car the camera follows: the player's, or a rival's when spectating (sim car id 0 is the player, the rest follow config.rivals)
+  const carIdOf = (c) => (c.isPlayer ? config.player?.carId : config.rivals?.[c.id - 1]?.carId) || 'hammer';
   const carsGroup = new THREE.Group(); root.add(carsGroup);
   const blobGeo = new THREE.CircleGeometry(1, 10); blobGeo.rotateX(-Math.PI / 2);
   const blobMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, depthWrite: false });
@@ -244,7 +246,11 @@ export function createRaceController(host, track, config = {}) {
     if (pp) {
       if (spectating) pp.wrecked = false;
       feel(B, follow);
+      rig.setCarId(carIdOf(follow));
       rig.update(dt, pp, B.phase, B.countdown);
+      // cockpit: the followed car's canopy goes, so its driver sees the road; every other car keeps its glass
+      const cockpitOn = rig.isCockpit();
+      for (const e of entries) { const hero = e && e.mesh && e.mesh.userData.hero; if (hero && hero.setCockpit) hero.setCockpit(cockpitOn && e.id === follow.id); }
     }
     if (pbrMode) {                                                    // lift the scene so the car clears the dashboard
       const cv = host.renderer.domElement, w = cv.width, h = cv.height, cam = host.camera;
