@@ -1,8 +1,8 @@
 import { normalizeSpikes } from '../../data/spikes.js';
 import { h, button, screenHeader, attachMenuKeys } from '../dom.js';
 import { DRIVERS } from '../../data/drivers.js';
-import { DRIVERS_BY_DIFFICULTY } from '../../data/raceConfig.js';
-import { getCar } from '../../data/cars.js';
+import { DRIVERS_BY_DIFFICULTY, FIELD_SIZE } from '../../data/raceConfig.js';
+import { CARS, getCar } from '../../data/cars.js';
 import { getWeapon } from '../../data/weapons.js';
 import { drawPortrait } from '../../render/portraits.js';
 import { weaponIcon, icon } from '../icons.js';
@@ -45,7 +45,7 @@ export function createRosterScreen({ game, flow }) {
       h('span.rank-badge', `#${i + 1}`)));
   });
   const el = h('section.screen.screen-roster',
-    screenHeader('THE FIELD', `${DRIVERS.length} drivers. Five of them are drawn to race you each time, in all three cars. Easiest first.`),
+    screenHeader('THE FIELD', `${DRIVERS.length} survivors. ${FIELD_SIZE} of them are drawn to race you each time, in any of the ${CARS.length} cars. Easiest first.`),
     h('div.screen-body', grid),
     h('footer.screen-foot', button('BACK', () => flow.transition('garage'), 'btn-back'), h('span.spacer'), button('ARMORY', () => flow.transition('shop'))));
   return { el, show() { detach = attachMenuKeys(el); el.querySelector('.screen-body').scrollTop = 0; }, hide() { detach?.(); } };

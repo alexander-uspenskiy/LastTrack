@@ -27,7 +27,7 @@ export const paintHex = (id) => '#' + (getPaint(id) || PAINTS[0]).hex.toString(1
 export const accentHex = (id) => '#' + (getAccent(id) || ACCENTS[0]).hex.toString(16).padStart(6, '0');
 
 /** Stock paint per car (used until the player picks one). */
-export const DEFAULT_PAINT = { wasp: 'signal-red', hammer: 'solar-orange', bulwark: 'acid-green' };
+export const DEFAULT_PAINT = { wasp: 'signal-red', hammer: 'solar-orange', bulwark: 'acid-green', gullwing: 'chrome', rhino: 'graphite' };
 export const DEFAULT_ACCENT = 'cyan';
 export const isNumberStr = (s) => typeof s === 'string' && /^\d{1,2}$/.test(s);
 

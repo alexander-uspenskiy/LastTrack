@@ -21,7 +21,7 @@ function duel() {
 test('guided: priced between rocket and terminator, one slot, blast + strong homing', () => {
   const g = getWeapon('guided'), r = getWeapon('rocket'), t = getWeapon('terminator');
   assert.ok(g.price > r.price && g.price < t.price);
-  assert.ok(r.damage < g.damage && g.damage < t.damage && r.radius < g.radius && g.radius < t.radius, 'rocket < guided < terminator in damage and blast');
+  assert.ok(r.damage < g.damage && g.damage < t.damage && r.radius < g.radius, 'rocket < guided in damage and blast; the terminator rams instead of blasting');
   assert.ok(r.maxAmmo > g.maxAmmo && g.maxAmmo > t.maxAmmo, 'premium weapons carry fewer shots');
   assert.equal(g.slot, 1); assert.equal(g.kind, 'projectile');
   assert.ok(g.homing > r.homing && g.homing > t.homing && g.radius > r.radius * 1.1);

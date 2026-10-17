@@ -323,6 +323,10 @@ export const CAR_SILHOUETTES = {
   // Muscle car: wide shoulders, roof-mounted gun.
   hammer: buildCar({ a: 13.5, nf: 10, nr: 11.5, L: 42, sf: 7, sr: 5, wheel: [5.4, 14], extras: ['M27.5 46h5v10h-5z', 'M30 46v-7'] }),
   // Armoured brick: boxy outline, bull bar and side skirts.
+  // Low wedge in brushed steel: narrow nose, wide tail, twin nose guns.
+  gullwing: buildCar({ a: 11.5, nf: 6, nr: 9, L: 41, sf: 12, sr: 6, wheel: [4.4, 12], extras: ['M19 90h22', 'M24 86v3.5M36 86v3.5'] }),
+  // Military 4x4: square, wide, bull bar and a roof rack.
+  rhino: buildCar({ a: 16, nf: 14, nr: 14.5, L: 41, sf: 2, sr: 2, wheel: [6.2, 15], extras: ['M14 5.5h32', 'M18 5.5v4M42 5.5v4', 'M26.5 46h7v9h-7z'] }),
   bulwark: buildCar({ a: 15, nf: 13, nr: 13.5, L: 40, sf: 3.5, sr: 3, wheel: [5.6, 15], extras: ['M15.5 7.5h29', 'M17 7.5v3.5M43 7.5v3.5'] }),
 };
 

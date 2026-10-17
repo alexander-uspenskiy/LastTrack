@@ -23,15 +23,15 @@ test('paint presets: 12 distinct, modern set with PBR finishes; accents; stock p
   assert.equal(playerLivery({ ...defaultSave(), carId: 'wasp', paint: 'violet' }).paint, 'violet');
 });
 
-test('rivals: 8 fixed, distinct primary liveries (paint + accent + number + decals) with a secondary', () => {
-  assert.equal(DRIVERS.length, 8);
+test('rivals: 11 fixed, distinct primary liveries (paint + accent + number + decals) with a secondary', () => {
+  assert.equal(DRIVERS.length, 11);
   const prim = DRIVERS.map((d) => d.liveries[0]);
-  assert.equal(new Set(prim.map((l) => l.paint)).size, 8, 'primary paints are all different');
+  assert.equal(new Set(prim.map((l) => l.paint)).size, 11, 'primary paints are all different');
   for (const d of DRIVERS) {
     assert.equal(d.liveries.length, 2); assert.notEqual(d.liveries[0].paint, d.liveries[1].paint);
     for (const l of d.liveries) { assert.ok(getPaint(l.paint) && ACCENTS.some((a) => a.id === l.accent) && /^\d{1,2}$/.test(l.number)); assert.ok(l.decals.length >= 1 && l.decals.length <= MAX_DECALS); for (const x of l.decals) assert.ok(normalizePlacement(x), `${d.id} ${x.id}`); }
   }
-  assert.equal(new Set(prim.map((l) => l.number)).size, 8, 'distinct numbers');
+  assert.equal(new Set(prim.map((l) => l.number)).size, 11, 'distinct numbers');
   assert.ok(DRIVERS.find((d) => d.id === 'vex').liveries[0].decals.some((x) => x.id === 'skull') && DRIVERS.find((d) => d.id === 'kane').liveries[0].decals.some((x) => x.id === 'bolt'));
 });
 

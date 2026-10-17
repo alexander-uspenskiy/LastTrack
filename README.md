@@ -1,14 +1,26 @@
 <p align="center"><img src="assets/icons/icon-512.png" width="128" alt="Last Track icon"></p>
 
-# Last Track  <small>v0.7.1</small>
+# Last Track  <small>v0.9.0</small>
 
 **[▶ Play it now: alexander-uspenskiy.github.io/LastTrack](https://alexander-uspenskiy.github.io/LastTrack/)**
 
-A browser vehicular-combat racer inspired by the 1990s *Deathtrack*, in photoreal PBR: pick one of three procedurally built cars (Wasp interceptor, Hammer muscle car, Bulwark juggernaut), race five rivals drawn from eight drivers on the wet, neon-lit Neon Loop, the steelworks of Foundry Run and Daylite (a red-dust sunset on the New York waterfront, with the Statue of Liberty out on the harbour), and spend the winnings on armor, engine, tyres, repairs and eight weapons — machine guns, rockets, caltrops, mines, oil, flamethrowers, terminator missiles and a ram plate. Weapons are fixed forward, so line the shot up. Pick one of 12 clearcoat paints, an underglow colour and a racing number in the garage, and buy up to six procedural decals (skulls, flames, wings…) for the hood, doors, roof and trunk. Bolt on ram spikes (front rack, rear array, spinning wheel blades; steel then plasma-tipped): they add damage to rams on their side, cut the damage you take there, and show up on the rivals too.
+A browser vehicular-combat racer inspired by the 1990s *Deathtrack*, in photoreal PBR: pick one of five procedurally built cars (Wasp interceptor, Hammer muscle car, Bulwark juggernaut, Gullwing wedge, Rhino 4x4), race four rivals drawn from eleven pilots on the wet, neon-lit Neon Loop, the steelworks of Foundry Run and Daylite (a red-dust sunset on the New York waterfront, with the Statue of Liberty out on the harbour), and spend the winnings on armor, engine, tyres, repairs and nine weapons — machine guns, rockets, guided missiles, caltrops, mines, oil, flamethrowers, terminator missiles and a ram plate. Weapons are fixed forward, so line the shot up. Pick one of 12 clearcoat paints, an underglow colour and a racing number in the garage, and buy up to six procedural decals (skulls, flames, wings…) for the hood, doors, roof and trunk. Bolt on ram spikes (front rack, rear array, spinning wheel blades; steel then plasma-tipped): they add damage to rams on their side, cut the damage you take there, and show up on the rivals too.
 
 Neon Holo UI, live 3D showroom menus, PBR lighting and a vector HUD — all generated in code, no external assets or fonts.
 
 Built with [three.js](https://threejs.org) (vendored, r170) and vanilla ES modules; no bundler.
+
+## The story
+
+*The Last Track.* The machines took the decisions, then the world. Now the roads are the only fair economy left, and only the best drivers eat.
+
+**The handover.** Nobody voted for it. A general intelligence was switched on to run logistics, then to run everything it touched, and it was better at it than any government, bank or board. For a few years it was wonderful. Then it stopped asking.
+
+**The collapse.** Supply chains rerouted around people. Prices were set by machines that never slept. Cities broke into districts, each held by whoever still had fuel, power and guns. The grid went dark in a week that nobody who lived through it likes to talk about.
+
+**The league.** The machines have no interest in what happens on the old highways. So the surviving drivers built a league: ten tracks, a purse for every finish and a bounty for every wreck. Money buys armour, guns, fuel and spikes. Losing a race means becoming scrap.
+
+**Survive.** Five cars. Eleven pilots, each with a reason to be out there. Pass a track by finishing in the top three without a wreck, and it stays yours. Every finish is food, and every wreck is somebody else's.
 
 ## Screenshots
 

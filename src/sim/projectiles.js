@@ -1,9 +1,9 @@
 // Projectile + hazard systems (rockets, terminator missiles, caltrops). Deterministic; ids are sequential.
 import { wrapAngle } from '../core/mathUtil.js';
-import { pointCarDistance } from './collisions.js';
+import { pointInCarBox } from './collisions.js';
 import { DROP_LIFE } from './weapons.js';
 
-const HIT_RADIUS = 0.6;           // extra reach on top of the car circles
+const BODY_MARGIN = 0.1;          // m: a projectile's own half-size, on top of the drawn car's body box
 const OWNER_SAFE = 0.25;          // s before a projectile can hit its owner (it can still never hit it directly)
 const HOMING_CONE = (25 * Math.PI) / 180;
 const HOMING_RANGE = 120;
@@ -46,7 +46,7 @@ export function createProjectileSystem(env) {
           const px = p.x + (dx * k) / sub, py = p.y + (dy * k) / sub;
           for (const c of env.cars) {
             if (c === p.owner || (c.wrecked && c.wreckTimer <= 0)) continue;
-            if (pointCarDistance(c, px, py) < HIT_RADIUS) { hit = c; p.x = px; p.y = py; break; }
+            if (pointInCarBox(c, px, py, BODY_MARGIN)) { hit = c; p.x = px; p.y = py; break; }
           }
         }
         if (!hit) { p.x += dx; p.y += dy; }

@@ -39,7 +39,7 @@ test('fieldFor: 4 distinct rivals per track, harder on later tracks, every drive
     const avg = f.reduce((n, id) => n + diff(id), 0) / 4;
     assert.ok(avg >= prev, `${t.id} not easier than previous`); prev = avg;
   });
-  assert.equal(DRIVERS.length, 8);
+  assert.equal(DRIVERS.length, 11);
   assert.deepEqual(new Set(TRACKS.flatMap((t, i) => fieldFor(t.id, i))), new Set(DRIVERS.map((d) => d.id)));
   for (const d of DRIVERS) assert.ok(tracksFor(d.id).length >= 1, d.id);
   assert.ok(fieldFor('x', 0).includes('rust') && fieldFor('x', TRACKS.length - 1).includes('kane'));

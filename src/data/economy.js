@@ -103,7 +103,8 @@ export function repairCar(save) {
 export function chooseCar(save, carId) {
   const car = getCar(carId);
   if (!car) return fail(save, 'unknown-car');
-  return { ok: true, save: { ...save, carId, upgrades: { armor: 0, engine: 0, tyres: 0 }, spikes: noSpikes(), damage: 0, weapons: car.startWeapons.map((w) => ({ ...w })) } };
+  const spikes = car.defaultSpikes ? normalizeSpikes(car.defaultSpikes) : noSpikes();   // some cars leave the factory with ram spikes fitted
+  return { ok: true, save: { ...save, carId, upgrades: { armor: 0, engine: 0, tyres: 0 }, spikes, damage: 0, weapons: car.startWeapons.map((w) => ({ ...w })) } };
 }
 
 /**

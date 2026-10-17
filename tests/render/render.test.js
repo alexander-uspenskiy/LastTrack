@@ -20,7 +20,7 @@ import { buildSky } from '../../src/render/raceController.js';
 
 const track = buildTrack(TRACKS[0]);
 
-test('car meshes: 3 distinct silhouettes, 4 wheels, finite geometry', () => {
+test('car meshes: 5 distinct silhouettes, 4 wheels, finite geometry', () => {
   const sizes = new Set();
   for (const id of CAR_IDS) {
     const g = buildCarMesh({ carId: id, color: 8, helmetColor: 10 });
@@ -31,7 +31,7 @@ test('car meshes: 3 distinct silhouettes, 4 wheels, finite geometry', () => {
     sizes.add([bb.max.y.toFixed(1), (bb.max.z - bb.min.z).toFixed(1), (bb.max.x - bb.min.x).toFixed(1)].join('/'));
     assert.ok(bb.max.x > 1.5 && bb.min.x < -1.5, 'long axis is X');
   }
-  assert.equal(sizes.size, 3);
+  assert.equal(sizes.size, CAR_IDS.length);
   assert.equal(buildCarMesh({ carId: 'hammer', wrecked: true }).userData.wrecked, true);
   assert.equal(buildCarMesh({ carId: 'nope' }).userData.carId, 'wasp');
 });

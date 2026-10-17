@@ -9,8 +9,10 @@ export const WEAPONS = [
   { id: 'caltrops', name: 'Caltrops', kind: 'drop', price: 1000, ammoPrice: 30, ammoPack: 5, maxAmmo: 15,
     damage: 8, speed: 0, range: 0, cooldown: 1.0, spread: 0, homing: 0, radius: 3, life: 20, slot: 1,
     slowTime: 6, gripPenalty: 0.5 },
-  { id: 'terminator', name: 'Terminator Missile', kind: 'projectile', price: 6000, ammoPrice: 150, ammoPack: 2, maxAmmo: 6,
-    damage: 32, speed: 75, range: 220, cooldown: 2.0, spread: 0, homing: 1.6, radius: 9, life: 4, slot: 2 },
+  // a low, arched mini car that runs fast ahead of the shooter and seeks the car in front; it blasts on impact and hits hard.
+  // One per car (a weapon fits once) and one slot, so every car can carry it.
+  { id: 'terminator', name: 'Terminator Drone', kind: 'projectile', drone: true, price: 9000, ammoPrice: 900, ammoPack: 1, maxAmmo: 2,
+    damage: 48, speed: 88, range: 180, cooldown: 2.5, spread: 0, homing: 2.6, radius: 6, life: 5, slot: 1 },
   // --- expansion: kind 'drop' (mine/oil), 'flame' (cone, ammo per tick), 'passive' (ramplate; ammo is a permanent 1)
   { id: 'mine', name: 'Mine', kind: 'drop', price: 1400, ammoPrice: 60, ammoPack: 4, maxAmmo: 12,
     damage: 30, speed: 0, range: 0, cooldown: 1.5, spread: 0, homing: 0, radius: 5, life: 30, slot: 1,

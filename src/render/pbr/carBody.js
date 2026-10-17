@@ -8,7 +8,7 @@ export const NX = 92;                       // stations along the car
 export const RING = 2 * NJ - 2;             // closed ring size
 export const HOOD_X = [0.72, 2.26];
 export const HOOD_HALF = 10;                 // ring samples either side of the top centre that belong to the hood
-export const WHEELS = Object.freeze({ front: 1.55, rear: -1.5, track: 1.0, radius: 0.43, width: 0.44, archR: 0.53 });
+export const WHEELS = Object.freeze({ front: 1.55, rear: -1.5, track: 1.0, radius: 0.43, width: 0.44, archR: 0.53, archIn: 0.58 });
 export const BODY_LEN = 5.22, BODY_X0 = -2.64, BODY_X1 = 2.58;
 
 // x, half-width at the shoulder, bottom, shoulder (beltline) height, top at the centre line
@@ -18,8 +18,14 @@ const KEYS = [
   [2.34, 0.95, 0.36, 0.72, 0.76], [2.50, 0.88, 0.42, 0.66, 0.69], [2.58, 0.78, 0.46, 0.62, 0.64],
 ];
 
+/**
+ * Shell profile: the body's section keys, length, hood span, wheels, optional canopy keys, bonnet crease and decal zones.
+ * The Hammer is the default; the Gullwing and Rhino pass their own (render/pbr/classicShells.js). Every function below takes it last.
+ */
+export const DEFAULT_SHELL = Object.freeze({ keys: KEYS, x0: BODY_X0, x1: BODY_X1, hoodX: HOOD_X, wheels: WHEELS, canopy: null, ridge: 0.034, zones: Object.freeze({ hood: 1.45, trunk: -1.95, door: -0.05, flankY: 0.86 }) });
+
 /** Section parameters at x. */
-export function sectionAt(x) { const [hw, yb, ysh, yt] = keyInterp(KEYS, x); const ridge = 0.034 * smoothstep(0.7, 1.15, x) * (1 - smoothstep(2.25, 2.5, x)); return { hw, yb, ysh, yt, ridge }; }   // ridge = centre crease on the bonnet
+export function sectionAt(x, shell = DEFAULT_SHELL) { const [hw, yb, ysh, yt] = keyInterp(shell.keys, x); const ridge = shell.ridge * smoothstep(0.7, 1.15, x) * (1 - smoothstep(2.25, 2.5, x)); return { hw, yb, ysh, yt, ridge }; }   // ridge = centre crease on the bonnet
 
 /** Right-half section points [z,y] (NJ of them), bottom centre -> top centre, for the station params. */
 export function halfSection({ hw, yb, ysh, yt, ridge = 0 }) {
@@ -32,7 +38,7 @@ export function halfSection({ hw, yb, ysh, yt, ridge = 0 }) {
 }
 
 /** Station x positions, clustered toward both ends. */
-export function stationXs() { const out = []; for (let i = 0; i < NX; i++) { const t = i / (NX - 1), s = 0.5 - 0.5 * Math.cos(Math.PI * t); out.push(BODY_X0 + (BODY_X1 - BODY_X0) * s); } return out; }
+export function stationXs(shell = DEFAULT_SHELL) { const out = []; for (let i = 0; i < NX; i++) { const t = i / (NX - 1), s = 0.5 - 0.5 * Math.cos(Math.PI * t); out.push(shell.x0 + (shell.x1 - shell.x0) * s); } return out; }
 
 const smoothNoise = (x, y, z) => {                               // smooth value noise for dents
   const h = (i, j, k) => { let n = Math.imul(i, 73856093) ^ Math.imul(j, 19349663) ^ Math.imul(k, 83492791); n = Math.imul(n ^ (n >>> 13), 1274126177); return ((n ^ (n >>> 16)) >>> 0) / 4294967295; };
@@ -50,14 +56,14 @@ export function carveGrille(p) {
   return p;
 }
 /** Carve wheel arches into a point (mutates and returns p=[x,y,z]). Pure. */
-export function carveArches(p) {
+export function carveArches(p, wh = WHEELS) {
   const az = Math.abs(p[2]);
   if (az < 0.3) return p;
-  for (const xc of [WHEELS.front, WHEELS.rear]) {
-    const d = Math.hypot(p[0] - xc, p[1] - WHEELS.radius);
-    const R = WHEELS.archR;
+  for (const xc of [wh.front, wh.rear]) {
+    const d = Math.hypot(p[0] - xc, p[1] - wh.radius);
+    const R = wh.archR;
     if (d < R + 0.1) {
-      const t = smoothstep(R, R * 0.93, d), inner = 0.58;
+      const t = smoothstep(R, R * 0.93, d), inner = wh.archIn;
       const z = lerp(az, Math.min(az, inner), t) + 0.03 * smoothstep(R + 0.1, R, d) * (1 - t);
       p[2] = Math.sign(p[2]) * z;
     }
@@ -82,15 +88,15 @@ export function dentPoint(x, y, z, dmg, crush = 0, out = [0, 0, 0]) {
 }
 
 /** Build the full body grid. Returns { P (Float32Array NX*RING*3), xs, ring(i,j) } with arches already carved. */
-export function buildBodyGrid() {
-  const xs = stationXs(), P = new Float32Array(NX * RING * 3);
+export function buildBodyGrid(shell = DEFAULT_SHELL) {
+  const xs = stationXs(shell), P = new Float32Array(NX * RING * 3);
   const tmp = [0, 0, 0];
   for (let i = 0; i < NX; i++) {
-    const half = halfSection(sectionAt(xs[i]));
+    const half = halfSection(sectionAt(xs[i], shell));
     for (let j = 0; j < RING; j++) {
       const rj = j < NJ ? j : RING - j;                            // mirror index for the left half
       const [z, y] = half[rj], sgn = j < NJ ? 1 : -1;
-      tmp[0] = xs[i]; tmp[1] = y; tmp[2] = sgn * z; carveArches(tmp);
+      tmp[0] = xs[i]; tmp[1] = y; tmp[2] = sgn * z; carveArches(tmp, shell.wheels);
       const o = (i * RING + j) * 3; P[o] = tmp[0]; P[o + 1] = tmp[1]; P[o + 2] = tmp[2];
     }
   }
@@ -98,8 +104,8 @@ export function buildBodyGrid() {
 }
 
 /** Is cell (i,j) (between stations i,i+1 and ring samples j,j+1) part of the hood? */
-export function isHoodCell(xs, i, j) {
-  if (xs[i] < HOOD_X[0] - 1e-6 || xs[i + 1] > HOOD_X[1] + 1e-6) return false;
+export function isHoodCell(xs, i, j, hoodX = HOOD_X) {
+  if (xs[i] < hoodX[0] - 1e-6 || xs[i + 1] > hoodX[1] + 1e-6) return false;
   return j >= NJ - 1 - HOOD_HALF && j < NJ - 1 + HOOD_HALF;
 }
 
@@ -107,8 +113,8 @@ export function isHoodCell(xs, i, j) {
  * Smooth-shaded geometries for { body, hood } with `aDirt` attribute. Normals come from the full grid (no seams).
  * Also returns `base` position copies for dent re-evaluation.
  */
-export function buildBodyGeometries() {
-  const { P, xs } = buildBodyGrid();
+export function buildBodyGeometries(shell = DEFAULT_SHELL) {
+  const { P, xs } = buildBodyGrid(shell);
   // full-grid normals
   const N = new Float32Array(P.length), v = (i, j) => { const k = (i * RING + ((j % RING) + RING) % RING) * 3; return [P[k], P[k + 1], P[k + 2]]; };
   for (let i = 0; i < NX; i++) for (let j = 0; j < RING; j++) {
@@ -118,7 +124,7 @@ export function buildBodyGeometries() {
     const l = Math.hypot(...n) || 1; n = n.map((q) => q / l);
     const p = v(i, j), sgn = Math.sign(p[2]) || 1;
     // orient outward: away from the centre line / up on top; ring order gives consistent sign but verify with the section centre
-    const cy = (sectionAt(xs[i]).yb + sectionAt(xs[i]).yt) / 2, out = [0, p[1] - cy, p[2]];
+    const cy = (sectionAt(xs[i], shell).yb + sectionAt(xs[i], shell).yt) / 2, out = [0, p[1] - cy, p[2]];
     if (n[1] * out[1] + n[2] * out[2] + n[0] * 0 < 0) n = n.map((q) => -q);
     void sgn;
     const k = (i * RING + j) * 3; N[k] = n[0]; N[k + 1] = n[1]; N[k + 2] = n[2];
@@ -133,10 +139,10 @@ export function buildBodyGeometries() {
       if (id === undefined) {
         id = pos.length / 3; map.set(key, id);
         const k = key * 3; pos.push(P[k], P[k + 1], P[k + 2]); nor.push(N[k], N[k + 1], N[k + 2]);
-        uv.push(j / RING, (xs[i] - BODY_X0) / BODY_LEN);
+        uv.push(j / RING, (xs[i] - shell.x0) / (shell.x1 - shell.x0));
         const y = P[k + 1], ax = Math.abs(P[k]), az = Math.abs(P[k + 2]);
         let dm = Math.pow(clamp(1 - (y - 0.27) / 0.55, 0, 1), 1.4);
-        for (const xc of [WHEELS.front, WHEELS.rear]) dm = Math.max(dm, 0.9 * (1 - smoothstep(0.5, 1.05, Math.hypot(P[k] - xc, y - 0.43))) * smoothstep(0.3, 0.8, az));
+        for (const xc of [shell.wheels.front, shell.wheels.rear]) dm = Math.max(dm, 0.9 * (1 - smoothstep(0.5, 1.05, Math.hypot(P[k] - xc, y - shell.wheels.radius))) * smoothstep(0.3, 0.8, az));
         void ax; dirt.push(dm);
       }
       return id;
@@ -159,7 +165,7 @@ export function buildBodyGeometries() {
     g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setAttribute('aDecalUv', new THREE.Float32BufferAttribute(uv.slice(), 2)); g.setAttribute('aDirt', new THREE.Float32BufferAttribute(dirt, 1)); g.setIndex(idx);
     return g;
   };
-  const body = make((i, j) => !isHoodCell(xs, i, j), true), hood = make((i, j) => isHoodCell(xs, i, j));
+  const body = make((i, j) => !isHoodCell(xs, i, j, shell.hoodX), true), hood = make((i, j) => isHoodCell(xs, i, j, shell.hoodX));
   for (const g of [body, hood]) { g.userData.base = g.attributes.position.array.slice(); g.computeBoundingSphere(); g.computeBoundingBox(); }
   for (const g of [body, hood]) orientTriangles(g);
   return { body, hood, xs, grid: P };
@@ -178,13 +184,13 @@ export function applyDents(g, dmg, crush) {
 const CANOPY = [[-1.42, 0.80, 0.0], [-1.18, 0.89, 0.15], [-0.78, 0.93, 0.35], [-0.2, 0.93, 0.455], [0.28, 0.92, 0.43], [0.66, 0.90, 0.27], [1.0, 0.86, 0.0]];
 export const CAN_NU = 28, CAN_NX = 40;
 /** Canopy dome grid: returns geometry plus the roof sub-grid indices. θ from right base over the top to left base. */
-export function buildCanopy() {
-  const pos = [], nor = [], uv = [], idx = [];
+export function buildCanopy(shell = DEFAULT_SHELL) {
+  const keys = shell.canopy || CANOPY, pos = [], nor = [], uv = [], idx = [];
   const pts = [];
   for (let i = 0; i < CAN_NX; i++) {
-    const x = CANOPY[0][0] + (CANOPY[CANOPY.length - 1][0] - CANOPY[0][0]) * (0.5 - 0.5 * Math.cos(Math.PI * i / (CAN_NX - 1)));
-    const [hw, h] = keyInterp(CANOPY.map((k) => [k[0], k[1], k[2]]), x);
-    const base = sectionAt(x).yt - 0.025;
+    const x = keys[0][0] + (keys[keys.length - 1][0] - keys[0][0]) * (0.5 - 0.5 * Math.cos(Math.PI * i / (CAN_NX - 1)));
+    const [hw, h] = keyInterp(keys, x);
+    const base = sectionAt(x, shell).yt - 0.025;
     for (let j = 0; j < CAN_NU; j++) {
       const th = (j / (CAN_NU - 1)) * Math.PI, c = Math.cos(th), s = Math.sin(th);
       const z = hw * c * (1 - 0.17 * s), y = base + h * Math.pow(s, 0.72);
@@ -237,8 +243,8 @@ export function orientTriangles(g) {
  * Decal frames for the body-shell zones: where each zone sits in the body UV square and how design space
  * (metres; s = decal right, t = decal up) maps into UV: { u, v, M:[[du/ds, du/dt],[dv/ds, dv/dt]] }. Pure geometry (Node-safe).
  */
-export function zoneFrames() {
-  const { P, xs } = buildBodyGrid();
+export function zoneFrames(shell = DEFAULT_SHELL) {
+  const { P, xs } = buildBodyGrid(shell);
   const at = (i, j) => { const k = (i * RING + ((j % RING) + RING) % RING) * 3; return [P[k], P[k + 1], P[k + 2]]; };
   const nearestStation = (x) => xs.reduce((b, v, i) => (Math.abs(v - x) < Math.abs(xs[b] - x) ? i : b), 0);
   const flankJ = (i, wantY) => { let best = 1, bd = 9; for (let j = 1; j < NJ; j++) { const p = at(i, j); if (p[2] > 0.5 && Math.abs(p[1] - wantY) < bd) { bd = Math.abs(p[1] - wantY); best = j; } } return best; };
@@ -252,8 +258,9 @@ export function zoneFrames() {
     const ms = solve(S), mt = solve(T);
     return { u: j / RING, v: (xs[i] - xs[0]) / (xs[xs.length - 1] - xs[0]), M: [[ms[0], mt[0]], [ms[1], mt[1]]] };
   };
-  const iH = nearestStation(1.45), iT = nearestStation(-1.95), iD = nearestStation(-0.05);
-  const jR = flankJ(iD, 0.86);
+  const Z = shell.zones;
+  const iH = nearestStation(Z.hood), iT = nearestStation(Z.trunk), iD = nearestStation(Z.door);
+  const jR = flankJ(iD, Z.flankY);
   return {
     hood: frame(iH, NJ - 1, [0, 0, 1], [1, 0, 0]),
     trunk: frame(iT, NJ - 1, [0, 0, 1], [1, 0, 0]),

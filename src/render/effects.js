@@ -116,6 +116,16 @@ function rocketGeometry(big) {
   b.box(-0.5 * s, 0, 0, 0.3 * s, 0.5 * s, 0.05, K.darkGrey);
   return b.build();
 }
+/** The terminator drone: a low, slim mini car with an arched canopy over its body, nose to +x (like the missiles), a white nose light
+ *  and a red tail light. It runs close to the road (see syncObjects for its height). */
+function droneGeometry() {
+  const b = new MeshBuilder();
+  b.box(0, 0.07, 0, 1.6, 0.14, 0.72, K.darkGrey, K.darkGrey);     // low body
+  b.cyl(-0.1, 0.14, 0, 0.2, 0.2, 1.1, 'x', 8, K.black, K.black);  // arched canopy over the body
+  b.box(0.82, 0.06, 0, 0.05, 0.08, 0.6, K.white, K.white);        // nose light
+  b.box(-0.82, 0.08, 0, 0.05, 0.1, 0.6, K.red, K.red);            // tail light
+  return b.build();
+}
 function guidedGeometry() {
   const b = new MeshBuilder();
   b.cyl(0, 0, 0, 0.12, 0.12, 1.25, 'x', 6, K.lightGrey);
@@ -221,7 +231,7 @@ export function createEffects(parent, { skid = true, soft = false } = {}) {
 
   // shared dynamic-object geometry / materials
   const lit = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
-  const geoRocket = rocketGeometry(false), geoTerm = rocketGeometry(true), geoGuided = guidedGeometry(), geoCal = caltropGeometry(), geoWreck = wreckGeometry(), geoMine = mineGeometry();
+  const geoRocket = rocketGeometry(false), geoTerm = droneGeometry(), geoGuided = guidedGeometry(), geoCal = caltropGeometry(), geoWreck = wreckGeometry(), geoMine = mineGeometry();
   const geoLamp = new THREE.CylinderGeometry(0.2, 0.2, 0.12, 6), geoPuddle = new THREE.CircleGeometry(1, 14);
   const lampOn = basic(K.red), lampOff = basic(K.plum), lampArmed = basic(K.yellow);
   const puddleMats = [basic(K.black), basic(K.navy), basic(K.lavender)];
@@ -396,7 +406,7 @@ export function createEffects(parent, { skid = true, soft = false } = {}) {
         e = { mesh, seen: true }; projMeshes.set(p.id, e);
       }
       e.seen = true;
-      e.mesh.position.set(p.x, 0.9, p.y); e.mesh.rotation.y = -p.heading;
+      e.mesh.position.set(p.x, p.type === 'terminator' ? 0.12 : 0.9, p.y); e.mesh.rotation.y = -p.heading;   // the drone runs low, on the road
       const c = Math.cos(p.heading), s = Math.sin(p.heading);
       // trail (two particles per frame, flame + smoke)
       if (p.type === 'guided') {   // glowing exhaust: white-hot core + cyan plume, long smoke trail

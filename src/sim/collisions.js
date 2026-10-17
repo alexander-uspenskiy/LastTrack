@@ -131,6 +131,19 @@ export function resolveCarCar(A, B) {
   return maxClose;
 }
 
+// The drawn car's body box, as measured from the rendered hammer (wheels and turret included): ±3.2 m along the car, ±1.7 m across.
+// Projectiles hit this box, so a missile that visibly reaches the car registers, and nothing registers outside the picture.
+export const BODY_HALF_LENGTH = 3.2;
+export const BODY_HALF_WIDTH = 1.7;
+
+/** True when point (px,py) is inside the car's drawn body box, grown by `margin` (the projectile's own half-size). */
+export function pointInCarBox(car, px, py, margin = 0) {
+  const c = Math.cos(car.heading), s = Math.sin(car.heading);
+  const dx = px - car.x, dy = py - car.y;
+  const f = dx * c + dy * s, r = -dx * s + dy * c;
+  return Math.abs(f) <= BODY_HALF_LENGTH + margin && Math.abs(r) <= BODY_HALF_WIDTH + margin;
+}
+
 /** Nearest-distance test of point (px,py) against a car's two circles; returns distance minus circle radius. */
 export function pointCarDistance(car, px, py) {
   const c = Math.cos(car.heading), s = Math.sin(car.heading);

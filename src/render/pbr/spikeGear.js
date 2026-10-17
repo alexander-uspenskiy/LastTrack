@@ -8,6 +8,8 @@ const SHAPE = {
   hammer: { front: { x: 2.66, y: 0.5, hw: 0.95, n: 7 }, rear: { x: -2.68, y: 0.72, hw: 0.8, n: 5 } },
   wasp: { front: { x: 2.66, y: 0.44, hw: 0.9, n: 5 }, rear: { x: -2.68, y: 0.68, hw: 0.82, n: 5 } },
   bulwark: { front: { x: 3.06, y: 0.56, hw: 1.1, n: 9 }, rear: { x: -3.0, y: 0.62, hw: 0.95, n: 5 } },
+  gullwing: { front: { x: 2.2, y: 0.3, hw: 0.9, n: 7 }, rear: { x: -2.2, y: 0.36, hw: 0.8, n: 5 } },
+  rhino: { front: { x: 3.0, y: 0.6, hw: 1.0, n: 9 }, rear: { x: -2.95, y: 0.6, hw: 0.95, n: 5 } },
 };
 export const SPIKE_LEN = [0, 0.34, 0.52];
 /** Pure: spike list for one zone ('front' | 'rear') at a tier: [{ p, d, len, r }] (d = unit direction, +X forward). Empty at tier 0. */

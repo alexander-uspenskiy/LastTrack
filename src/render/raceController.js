@@ -11,6 +11,7 @@ import { makeKeyLight, followShadow } from './pbr/pbrHost.js';
 import { PBR_PALETTE } from './pbr/paints.js';
 import { buildTrackMesh } from './trackMesh.js';
 import { buildScenery } from './scenery.js';
+import { interpolateProjectiles } from './interp.js';
 import { createEffects } from './effects.js';
 import { CameraRig, nextCameraMode, CAMERA_MODES } from './cameras.js';
 import { colorRGB, wrapAngle, angleDiff, disposeObject } from './geomUtil.js';
@@ -260,7 +261,8 @@ export function createRaceController(host, track, config = {}) {
     if (pbrTrack && pp) { if (host.pbr && host.pbr.qualityName !== lastQ) { lastQ = host.pbr.qualityName; pbrTrack.setQuality(host.pbr.quality); } pbrTrack.update(dt, host.camera, { x: pp.x, z: pp.y }); }
     if (keyLight && pp) followShadow(keyLight, pp.x, 0, pp.y);
     if (heroTrack) heroTrack.update(dt, host.camera, (host.renderer && host.renderer.domElement ? host.renderer.domElement.height : 600) / (host.palettePassActive ? (host.pixelScale || 2) : 1));
-    effects.update(B, dt * timeScaler.scale, getPose, (host.renderer && host.renderer.domElement ? host.renderer.domElement.height : 600) * 0.45 / (host.palettePassActive ? (host.pixelScale || 2) : 1));
+    // missiles on the cars' time base: blended between the snapshots like the cars, not parked at the newest one
+    effects.update({ ...B, projectiles: interpolateProjectiles(A.projectiles, B.projectiles, t) }, dt * timeScaler.scale, getPose, (host.renderer && host.renderer.domElement ? host.renderer.domElement.height : 600) * 0.45 / (host.palettePassActive ? (host.pixelScale || 2) : 1));
   }
 
   return {

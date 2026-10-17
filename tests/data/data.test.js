@@ -14,9 +14,9 @@ test('palette', () => {
   assert.equal(paletteHex(COLOR.sand), '#ffccaa');
 });
 test('cars/weapons/drivers consistent', () => {
-  assert.deepEqual(CARS.map((c) => c.id), ['wasp', 'hammer', 'bulwark']);
+  assert.deepEqual(CARS.map((c) => c.id), ['wasp', 'hammer', 'bulwark', 'gullwing', 'rhino']);
   assert.deepEqual(WEAPONS.map((w) => w.id), ['machinegun', 'rocket', 'guided', 'caltrops', 'terminator', 'mine', 'oil', 'flamethrower', 'ramplate']);
-  assert.deepEqual(DRIVERS.map((d) => d.id), ['vex', 'rust', 'fuse', 'kane', 'grave', 'slick', 'cinder', 'dolores']);
+  assert.deepEqual(DRIVERS.map((d) => d.id), ['vex', 'rust', 'fuse', 'kane', 'grave', 'slick', 'cinder', 'dolores', 'glass', 'ruin', 'kit']);
   assert.equal(getCar('nope'), null);
   for (const c of CARS) for (const w of c.startWeapons) assert.ok(getWeapon(w.id) && w.ammo <= getWeapon(w.id).maxAmmo);
   for (const d of DRIVERS) {
@@ -29,12 +29,12 @@ test('cars/weapons/drivers consistent', () => {
     for (const k of ['seed', 'skin', 'hair', 'accent']) assert.ok(Number.isInteger(d.portrait[k]));
     for (const c of [d.color, d.helmet, d.portrait.skin, d.portrait.hair, d.portrait.accent]) assert.ok(c >= 0 && c < 16);
   }
-  assert.equal(new Set(DRIVERS.map((d) => d.favoriteWeapon)).size, 8, 'distinct favourites');
+  assert.equal(new Set(DRIVERS.map((d) => d.favoriteWeapon)).size, WEAPONS.length, 'every weapon has a pilot who favours it');
   assert.equal(new Set(DRIVERS.map((d) => d.name)).size, DRIVERS.length);
   assert.equal(getWeapon('ramplate').kind, 'passive'); assert.equal(getWeapon('flamethrower').kind, 'flame');
-  assert.equal(getWeapon('terminator').slot, 2);
-  assert.equal(getWeapon('terminator').price, 6000);
-  assert.equal(getWeapon('terminator').homing, 1.6);
+  assert.equal(getWeapon('terminator').slot, 1, 'one slot: every car can carry it');
+  assert.equal(getWeapon('terminator').price, 9000);
+  assert.equal(getWeapon('terminator').homing, 2.6);
 });
 test('upgrades', () => {
   assert.deepEqual(UPGRADES.map((u) => u.id), ['armor', 'engine', 'tyres']);

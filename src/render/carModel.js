@@ -4,11 +4,13 @@ import * as THREE from 'three';
 import { MeshBuilder } from './geomUtil.js';
 import { COLOR as K } from './paletteRef.js';
 
-export const CAR_IDS = ['wasp', 'hammer', 'bulwark'];
+export const CAR_IDS = ['wasp', 'hammer', 'bulwark', 'gullwing', 'rhino'];
 const SPECS = {
   wasp: { wheelR: 0.34, wheelW: 0.26, track: 0.78, front: 1.35, rear: -1.3, length: 4.2, width: 1.7 },
   hammer: { wheelR: 0.42, wheelW: 0.42, track: 1.0, front: 1.5, rear: -1.45, length: 4.7, width: 2.1 },
   bulwark: { wheelR: 0.5, wheelW: 0.4, track: 1.08, front: 1.55, rear: -1.5, length: 4.9, width: 2.3 },
+  gullwing: { wheelR: 0.33, wheelW: 0.27, track: 0.92, front: 1.2, rear: -1.15, length: 4.24, width: 2.0 },
+  rhino: { wheelR: 0.47, wheelW: 0.34, track: 1.0, front: 1.6, rear: -1.7, length: 5.24, width: 2.24 },
 };
 export const carSpec = (id) => SPECS[id] || SPECS.wasp;
 /** parts lost -> { part: true } lookup (array of ids, Set or object accepted) */
@@ -129,10 +131,43 @@ function bodyBulwark(b, c, h, o) {
   }
   if (o.armor) { if (!L.doorR) b.box(0.6, 1.6, 0.98, 1.6, 0.9, 0.08, K.lightGrey); if (!L.doorL) b.box(0.6, 1.6, -0.98, 1.6, 0.9, 0.08, K.lightGrey); }
 }
+function bodyGullwing(b, c, h, o) {
+  const dk = K.black, L = o.lost;
+  // low wedge: short nose, raked glass, flat tail, twin nose guns
+  b.box(-0.2, 0.55, 0, 3.8, 0.5, 1.9, c, c);                                          // lower body
+  b.box(0.9, 0.7, 0, 1.2, 0.2, 1.9, c, c);                                            // nose wedge
+  b.box(-0.5, 1.02, 0, 1.6, 0.14, 1.5, dk, K.navy);                                   // glass
+  b.box(-0.5, 1.12, 0, 1.2, 0.06, 1.2, h);                                            // roof band
+  if (!L.spoiler) b.box(-1.9, 0.82, 0, 0.5, 0.25, 1.8, c, K.darkGrey);               // rear deck
+  if (!L.bumperF) b.box(2.1, 0.32, 0, 0.2, 0.2, 1.9, K.darkGrey);                     // nose blade
+  if (!L.bumperR) b.box(-2.15, 0.36, 0, 0.2, 0.22, 1.9, K.darkGrey);                  // tail blade
+  if (!L.doorR) b.box(-0.2, 0.7, 0.98, 2.2, 0.08, 0.06, K.darkGrey);                  // gull-wing shut line
+  if (!L.doorL) b.box(-0.2, 0.7, -0.98, 2.2, 0.08, 0.06, K.darkGrey);
+  if (!L.turret) { b.cyl(1.55, 0.6, 0.3, 0.07, 0.07, 0.7, 'x', 5, K.darkGrey); b.cyl(1.55, 0.6, -0.3, 0.07, 0.07, 0.7, 'x', 5, K.darkGrey); }
+  if (o.engine) { b.cyl(-2.2, 0.36, 0.3, 0.07, 0.07, 0.3, 'x', 5, K.orange); b.cyl(-2.2, 0.36, -0.3, 0.07, 0.07, 0.3, 'x', 5, K.orange); }
+}
+function bodyRhino(b, c, h, o) {
+  const L = o.lost;
+  // high boxy hull on a tall chassis, square cab, flared arches, bull bar and a roof rack
+  b.box(-0.2, 0.83, 0, 5.2, 0.74, 2.24, c, c);                                        // hull
+  b.box(-0.5, 1.46, 0, 2.2, 0.52, 2.0, c, K.navy);                                    // cab
+  b.box(-0.5, 1.4, 1.02, 1.8, 0.36, 0.04, K.black); b.box(-0.5, 1.4, -1.02, 1.8, 0.36, 0.04, K.black);   // cab windows
+  b.box(-0.5, 1.74, 0, 2.0, 0.06, 1.9, h);                                            // roof
+  if (!L.hood) b.box(1.5, 1.22, 0, 1.8, 0.08, 2.0, c, c);                             // bonnet
+  if (!L.bumperF) { b.box(2.9, 0.62, 0, 0.14, 0.5, 2.0, K.darkGrey); b.box(2.9, 0.92, 0, 0.1, 0.1, 2.0, K.darkGrey); }   // bull bar
+  b.box(2.55, 0.9, 0, 0.06, 0.4, 1.2, K.black);                                       // grille
+  for (const z of [1, -1]) b.box(-0.2, 1.8, z * 0.82, 2.2, 0.06, 0.06, K.darkGrey);   // roof rack rails
+  if (!L.turret) { b.box(-0.2, 1.9, 0, 0.5, 0.2, 0.5, K.darkGrey); b.cyl(-0.2, 2.1, 0.12, 0.07, 0.07, 1.2, 'x', 5, K.darkGrey); b.cyl(-0.2, 2.1, -0.12, 0.07, 0.07, 1.2, 'x', 5, K.darkGrey); }
+  if (!L.spoiler) b.cyl(-2.95, 0.95, 0, 0.45, 0.45, 0.25, 'x', 8, K.black);           // spare on the tailgate
+  b.cyl(-1.9, 1.5, -1.12, 0.07, 0.07, 1.3, 'y', 5, K.lightGrey);                      // exhaust stack
+  if (o.armor) { b.box(-0.2, 0.92, 1.2, 1.7, 0.9, 0.05, K.lightGrey); b.box(-0.2, 0.92, -1.2, 1.7, 0.9, 0.05, K.lightGrey); }   // door armour
+}
 /** Emissive lights per car (local frame): [x, y, z, sx, sy, sz, colour, intensity]. Underglow takes the helmet/accent colour. */
 const LIGHTS = {
   wasp: [[1.55, 0.38, 0.28, 0.1, 0.06, 0.2, K.white, 3], [1.55, 0.38, -0.28, 0.1, 0.06, 0.2, K.white, 3], [-2.1, 0.58, 0, 0.06, 0.07, 1.1, K.red, 2.6], [0.1, 0.1, 0.9, 2.6, 0.05, 0.05, 'a', 2.2], [0.1, 0.1, -0.9, 2.6, 0.05, 0.05, 'a', 2.2]],
   hammer: [[2.5, 0.8, 0.75, 0.08, 0.12, 0.32, K.white, 3], [2.5, 0.8, -0.75, 0.08, 0.12, 0.32, K.white, 3], [-2.17, 0.62, 0, 0.06, 0.08, 1.5, K.red, 2.6], [0.4, 0.14, 1.06, 3.2, 0.05, 0.05, 'a', 2.2], [0.4, 0.14, -1.06, 3.2, 0.05, 0.05, 'a', 2.2]],
+  gullwing: [[2.12, 0.4, 0, 0.05, 0.04, 1.4, K.white, 3], [-2.14, 0.7, 0, 0.05, 0.06, 1.5, K.red, 2.6], [0, 0.22, 1.0, 3.6, 0.05, 0.05, 'a', 2.2], [0, 0.22, -1.0, 3.6, 0.05, 0.05, 'a', 2.2]],
+  rhino: [[2.62, 1.0, 0.8, 0.06, 0.12, 0.12, K.white, 3], [2.62, 1.0, -0.8, 0.06, 0.12, 0.12, K.white, 3], [-2.7, 1.12, 0.8, 0.05, 0.14, 0.26, K.red, 2.6], [-2.7, 1.12, -0.8, 0.05, 0.14, 0.26, K.red, 2.6], [0, 0.44, 1.14, 4.0, 0.05, 0.05, 'a', 2.2], [0, 0.44, -1.14, 4.0, 0.05, 0.05, 'a', 2.2]],
   bulwark: [[2.57, 1.15, 0.85, 0.06, 0.16, 0.4, K.white, 3], [2.57, 1.15, -0.85, 0.06, 0.16, 0.4, K.white, 3], [-2.42, 1.0, 0.7, 0.05, 0.12, 0.5, K.red, 2.6], [-2.42, 1.0, -0.7, 0.05, 0.12, 0.5, K.red, 2.6], [0.2, 0.2, 1.16, 3.6, 0.05, 0.05, 'a', 2.2], [0.2, 0.2, -1.16, 3.6, 0.05, 0.05, 'a', 2.2]],
 };
 function glowGeometry(id, accent) {
@@ -144,7 +179,7 @@ function glowGeometry(id, accent) {
   for (let i = 0; i < arr.length; i++) for (let v = 0; v < 36; v++) for (let q = 0; q < 3; q++) col[(i * 36 + v) * 3 + q] *= arr[i][7];
   return g.build();
 }
-const BODIES = { wasp: bodyWasp, hammer: bodyHammer, bulwark: bodyBulwark };
+const BODIES = { wasp: bodyWasp, hammer: bodyHammer, bulwark: bodyBulwark, gullwing: bodyGullwing, rhino: bodyRhino };
 
 function bodyGeometry(id, color, helmetColor, wrecked, up, lost) {
   const b = new MeshBuilder({ smooth: 46, jitter: 0.035, ao: 0.34, aoSpan: 0.95 });

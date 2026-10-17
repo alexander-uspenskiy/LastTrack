@@ -9,6 +9,7 @@ import { useStage } from '../stage.js';
 /** Pure: one-line spec shown under a weapon's name in the armory. */
 export function weaponSpec(w) {
   const slot = `slots ${w.slot}`;
+  if (w.drone) return `drone · small car, runs ahead and rams the car in front · dmg ${w.damage} · one per car · ${slot}`;
   switch (w.kind) {
     case 'passive': return `passive · rams x${w.ramMult} dmg, takes x${w.ramTaken} · no ammo · ${slot}`;
     case 'flame': return `flame · ${(w.damage / w.cooldown).toFixed(0)} dmg/s · cone ${w.range}m · burns ammo fast · ${slot}`;

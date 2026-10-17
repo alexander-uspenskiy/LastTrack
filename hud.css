@@ -343,5 +343,14 @@ html.touch .tc, body.touch .tc { display: flex; }
 .lock-reticle b{position:absolute;width:22%;height:22%;border:0 solid currentColor}
 .lock-reticle b:nth-child(1){left:0;top:0;border-width:2px 0 0 2px}.lock-reticle b:nth-child(2){right:0;top:0;border-width:2px 2px 0 0}
 .lock-reticle b:nth-child(3){left:0;bottom:0;border-width:0 0 2px 2px}.lock-reticle b:nth-child(4){right:0;bottom:0;border-width:0 2px 2px 0}
+/* incoming-threat warning (ui/overlays.js): a ring round the player's car, the arrow on it points at the threat */
+.threat-warn{position:absolute;left:0;top:0;width:0;height:0;visibility:hidden;color:#ffb020;filter:drop-shadow(0 0 6px currentColor);pointer-events:none}
+.threat-warn.lock{color:#ff3b3b;animation:lockpulse .35s ease-in-out infinite alternate}
+.threat-ring{position:absolute;left:-72px;top:-72px;width:144px;height:144px;border-radius:50%;border:2px solid currentColor;animation:threatblink .8s steps(2) infinite}
+.threat-warn.lock .threat-ring{animation:none}
+.threat-arrow{position:absolute;left:0;top:0;width:0;height:0}
+.threat-arrow svg{position:absolute;left:-13px;top:-92px;width:26px;height:26px;fill:currentColor}
+.threat-warn>span{position:absolute;left:-110px;top:84px;width:220px;text-align:center;font:700 12px/1 system-ui,sans-serif;letter-spacing:.14em;white-space:nowrap}
+@keyframes threatblink{to{opacity:.15}}
 .lock-reticle span{position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:4px;font:700 11px/1 'Rajdhani',system-ui,sans-serif;letter-spacing:.2em}
 @keyframes lockpulse{from{opacity:.65}to{opacity:1}}

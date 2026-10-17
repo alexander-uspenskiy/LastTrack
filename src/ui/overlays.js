@@ -3,6 +3,7 @@
 import * as THREE from 'three';
 import { icon } from './icons.js';
 import { coracerFace, FACE_ICON } from './hud.js';
+import { threatsFor } from './threats.js';
 
 export const PLATE_MAX = 5;          // plates shown at once (nearest first)
 export const PLATE_RANGE = 150;      // m: beyond this no plate
@@ -56,6 +57,12 @@ export function createOverlays({ root }) {
   ret.innerHTML = '<b></b><b></b><b></b><b></b><span>LOCK</span>';
   const retLabel = ret.lastChild;
   layer.append(ret);
+  // incoming-threat warning: a ring round the player's car, an arrow on the ring pointing at the threat, its name under the ring
+  const warn = document.createElement('div'); warn.className = 'threat-warn';
+  warn.innerHTML = '<i class="threat-ring"></i><i class="threat-arrow"><svg viewBox="0 0 20 20"><path d="M10 0 L20 18 L10 13 L0 18 Z"/></svg></i><span></span>';
+  const warnArrow = warn.querySelector('.threat-arrow'), warnLabel = warn.lastChild;
+  layer.append(warn);
+  let warnVis = false, warnKey = '';
   root.append(layer);
   const v = new THREE.Vector3();
   const byCar = new Map();           // carId -> plate (stable assignment so names do not thrash)
@@ -143,8 +150,19 @@ export function createOverlays({ root }) {
         }
       }
       if (on !== retVis) { retVis = on; ret.style.visibility = on ? 'visible' : 'hidden'; if (!on) retMode = ''; }
+      // --- incoming threats: the most urgent one (locked first, then nearest) gets the ring and the arrow
+      const threats = me && !me.wrecked ? threatsFor(snap) : [];
+      const mp = threats.length && poseOf ? poseOf(me.id) : null;
+      if (threats.length && project(camera, mp ? mp.x : me.x, 1.0, mp ? mp.y : me.y, w, h)) {
+        const t = threats[0];
+        warn.style.transform = `translate(${px.toFixed(1)}px,${py.toFixed(1)}px)`;
+        warnArrow.style.transform = `rotate(${(t.bearing * 180 / Math.PI).toFixed(1)}deg)`;
+        const key = t.label + (t.lock ? '!' : '');
+        if (key !== warnKey) { warnKey = key; warn.className = 'threat-warn' + (t.lock ? ' lock' : ''); warnLabel.textContent = t.lock ? `LOCKED · ${t.label}` : t.label; }
+        if (!warnVis) { warnVis = true; warn.style.visibility = 'visible'; }
+      } else if (warnVis) { warnVis = false; warn.style.visibility = 'hidden'; warnKey = ''; }
     },
-    clear() { for (const p of plates) { hidePlate(p); p.carId = -1; } byCar.clear(); deadFor.clear(); if (retVis) { retVis = false; retMode = ''; ret.style.visibility = 'hidden'; } },
+    clear() { for (const p of plates) { hidePlate(p); p.carId = -1; } byCar.clear(); deadFor.clear(); if (retVis) { retVis = false; retMode = ''; ret.style.visibility = 'hidden'; } if (warnVis) { warnVis = false; warn.style.visibility = 'hidden'; warnKey = ''; } },
     dispose() { layer.remove(); },
   };
 }

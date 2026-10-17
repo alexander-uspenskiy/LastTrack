@@ -185,7 +185,9 @@ export function createRaceSim(config, opts = {}) {
       const sfName = surfaceAt(track, car.proj.s, car.proj.d);
       const sf = surfaceMods(sfName);
       car.surface = sfName;
-      mods.gripMult *= sf.grip; mods.dragExtra = sf.drag; mods.rough = sf.rough;
+      // offroad (0..1, 4x4s): closes part of the grip, drag and roughness gap on dirt, puddles and oil. Tarmac is unchanged.
+      const off = car.stats.offroad || 0;
+      mods.gripMult *= 1 - (1 - sf.grip) * (1 - off); mods.dragExtra = sf.drag * (1 - off); mods.rough = sf.rough * (1 - 0.5 * off);
       mods.locked = !racing;
       mods.kick = car.aiControlled ? 0 : 1; mods.noNitro = car.aiControlled;   // AI drives clean; nitro is a human toy
       car.throttleIn = inp.throttle || 0;

@@ -3,6 +3,7 @@ import { h, attachMenuKeys, fmtMoney } from '../dom.js';
 import { icon } from '../icons.js';
 import { getCar } from '../../data/cars.js';
 import { GAME_TRACKS } from '../../data/tracks/index.js';
+import { STORY } from '../../data/story.js';
 import { VERSION } from '../../version.js';
 
 /** Pure: one-line save summary for the Continue button. */
@@ -37,6 +38,7 @@ export function createTitleScreen({ game, flow, openSettings }) {
       h('div.eyebrow', 'Vehicular combat league'),
       h('h1.logo', { 'aria-label': 'Last Track' }, h('span', 'LAST'), h('span.alt', 'TRACK')),
       h('p.tag', 'Race for money. Race for your life.'),
+      h('p.story-premise', { style: { maxWidth: '40rem', margin: '0.6rem auto 0', lineHeight: '1.5', fontSize: '0.95rem', opacity: '0.85' } }, STORY.premise),
       menu),
     h('div.title-foot', keys, h('span.ver', 'three.js')),
     h('footer.credits',

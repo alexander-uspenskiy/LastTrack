@@ -10,6 +10,8 @@ export const CHASE = Object.freeze({ back: 8, up: 3, lookAhead: 7, lookUp: 0.9, 
 export const COCKPITS = Object.freeze({
   wasp: Object.freeze({ x: -0.55, y: 0.91, fov: 74 }),
   hammer: Object.freeze({ x: -0.55, y: 1.26, fov: 76 }),
+  gullwing: Object.freeze({ x: -0.3, y: 0.98, fov: 74 }),   // low wedge: the seat sits behind the nose, under the raked glass
+  rhino: Object.freeze({ x: -0.4, y: 1.5, fov: 78 }),       // tall cab: the eye sits high, over the bull bar
   bulwark: Object.freeze({ x: -0.55, y: 1.69, fov: 78 }),
 });
 export const cockpitFor = (carId) => COCKPITS[carId] || COCKPITS.hammer;

@@ -44,7 +44,7 @@ test('field picker: seeded, five distinct drivers, all three cars show up over t
   assert.deepEqual(pickDrivers(5), pickDrivers(5));
   const seen = new Set(), carsSeen = new Set(), sets = new Set();
   for (let s = 0; s < 40; s++) { const f = pickDrivers(s); assert.equal(f.length, 5); assert.equal(new Set(f).size, 5); f.forEach((id) => { seen.add(id); carsSeen.add(DRIVERS.find((d) => d.id === id).carId); }); sets.add(f.join(',')); assert.ok(new Set(f.map((id) => DRIVERS.find((d) => d.id === id).carId)).size >= 2); }
-  assert.equal(seen.size, DRIVERS.length, 'all 8 drivers appear'); assert.equal(carsSeen.size, 3); assert.ok(sets.size > 8, 'fields vary per race');
+  assert.equal(seen.size, DRIVERS.length, 'every driver appears'); assert.equal(carsSeen.size, CARS.length, 'every car is driven by someone'); assert.ok(sets.size > 8, 'fields vary per race');
   const cols = assignLiveries([9, 9, 8, 12], 9, [12, 11, 2, 8, 14, 13]);
   assert.equal(new Set([...cols, 9]).size, 5);
 });
@@ -55,7 +55,7 @@ test('game config: player car from the save + 5 enemies with their own cars/weap
     const cfg = createGameConfig({ trackId: 'foundry', save, seed: 11 });
     assert.equal(cfg.rivals.length, FIELD_ENEMIES); assert.equal(cfg.player.carId, car.id); assert.equal(cfg.trackId, 'foundry');
     assert.equal(cfg.hero, true); assert.equal(cfg.heroStyle, 'pbr');
-    assert.ok(cfg.rivals.every((r) => r.hunt && r.loadout.length >= 1 && ['wasp', 'hammer', 'bulwark'].includes(r.carId) && r.stats.mass === CARS.find((c) => c.id === r.carId).base.mass));
+    assert.ok(cfg.rivals.every((r) => r.hunt && r.loadout.length >= 1 && CARS.some((c) => c.id === r.carId) && r.stats.mass === CARS.find((c) => c.id === r.carId).base.mass));
     assert.equal(new Set([...cfg.rivals.map((r) => r.color), cfg.player.color]).size, 6, 'six distinct liveries');
     assert.equal(new Set(cfg.rivals.map((r) => r.number)).size >= 4, true);
     const sim = createRaceSim(cfg, {}); assert.equal(sim.snapshot().cars.length, 6);

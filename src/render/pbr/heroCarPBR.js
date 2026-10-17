@@ -10,6 +10,7 @@ import { createSpikeRig } from './spikeGear.js';
 import { getPaint } from '../../data/liveries.js';
 import { composeBodyDecals, composeRoofDecals } from '../decalArt.js';
 import { flakeNormal, carbonMaps, treadNormal, brushedMaps, glowSprite } from './maps.js';
+import { GULLWING_SHELL, RHINO_SHELL, gullwingHooks, rhinoHooks } from './classicShells.js';
 
 export const PBR_SPEC = Object.freeze({
   length: 5.3, width: 2.45, wheelR: WHEELS.radius, wheelW: WHEELS.width,
@@ -24,6 +25,9 @@ export const VARIANTS = {
   hammer: { sx: 1, sy: 1, sz: 1, ws: 1, plates: true, paint: { metalness: 0.62, roughness: 0.3, clearcoat: 1 }, turrets: [{ x: -0.3, y: 1.53, z: 0, twin: true, scale: 1 }], thrusters: PBR_SPEC.thrusters, length: 5.3, width: 2.45 },
   wasp: { sx: 1, sy: 0.76, sz: 1.05, ws: 0.78, plates: false, paint: { metalness: 0.85, roughness: 0.2, clearcoat: 1 }, turrets: [{ x: -0.25, y: 1.53, z: 0, twin: false, scale: 0.8 }], thrusters: PBR_SPEC.thrusters, length: 5.3, width: 2.6 },
   bulwark: { sx: 0.97, sy: 1.3, sz: 1.12, ws: 1.28, plates: true, paint: { metalness: 0.35, roughness: 0.55, clearcoat: 0.35 }, turrets: [{ x: -0.45, y: 1.64, z: 0.52, twin: false, scale: 0.85 }, { x: -0.45, y: 1.64, z: -0.52, twin: false, scale: 0.85 }], thrusters: [[-3.1, 0.9, 0.75], [-3.1, 0.9, -0.75]], length: 5.3, width: 2.8 },
+  // classic shells (render/pbr/classicShells.js): shell = body profile, hooks = parts, ws / wz = wheel radius / width scale of the stock wheel
+  gullwing: { sx: 1, sy: 1, sz: 1, ws: 0.767, wz: 0.614, plates: true, paint: { metalness: 1, roughness: 0.3, clearcoat: 0.25 }, paintOver: { roughness: 0.32, clearcoat: 0.2 }, turrets: [{ x: 1.55, y: 0.6, z: 0.42, twin: true, scale: 0.55 }], thrusters: [[-2.14, 0.36, 0.32], [-2.14, 0.36, -0.32]], length: 4.24, width: 2.0, shell: GULLWING_SHELL, hooks: gullwingHooks },
+  rhino: { sx: 1, sy: 1, sz: 1, ws: 1.093, wz: 0.773, plates: true, paint: { metalness: 0.2, roughness: 0.8, clearcoat: 0 }, paintOver: { metalness: 0.2, roughness: 0.8, clearcoat: 0 }, turrets: [{ x: -0.2, y: 1.74, z: 0, twin: true, scale: 0.95 }], thrusters: [[-2.78, 0.5, 0.58], [-2.78, 0.5, -0.58]], length: 5.24, width: 2.24, shell: RHINO_SHELL, hooks: rhinoHooks },
 };
 /** World-frame (car-local) muzzle positions of a variant: { x, y, zs:[..] } — every barrel tip, for tracers / muzzle particles. */
 export function carMuzzle(carId = 'hammer') {
@@ -355,8 +359,10 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
   const uni = { uDirt: { value: 0 }, uWet: { value: 0 }, tDecal: { value: blank }, uDecalOn: { value: 0 } };
   if (livery && livery.paintHex !== undefined) color = livery.paintHex;
   if (livery && livery.accentHex !== undefined) accent = livery.accentHex;
-  const bg = buildBodyGeometries();
-  const canopy = buildCanopy(), roofGeo = buildRoofPanel(canopy);
+  const bg = buildBodyGeometries(V.shell);
+  const canopy = buildCanopy(V.shell), roofGeo = buildRoofPanel(canopy);
+  // parts: the car's own hooks where it has them (classic shells), otherwise the Hammer-family parts below
+  const H = { carbonKit, armour, headLights, tailLights, reverseLights, displays, underglow, interior, internals, panelGaps, wingFlap, ...(V.hooks || {}) };
   const root = new THREE.Group(); root.name = 'car-hammer-pbr'; root.userData.variant = carId;
   const sprung = new THREE.Group(); root.add(sprung); sprung.scale.set(V.sx, V.sy, V.sz);
   const mats = {
@@ -387,16 +393,16 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
   const mesh = (g, m, name, cast = true, recv = false) => { const o = new THREE.Mesh(g, m); o.name = name; o.castShadow = cast; o.receiveShadow = recv; return o; };
   const body = mesh(bg.body, mats.paint, 'body', true, true), hood = mesh(bg.hood, mats.paint, 'hood', true, true);
   const glass = mesh(canopy, mats.glass, 'glass', false);
-  const ck = carbonKit(), kit = mesh(mergeGeo([ck.main, roofGeo, pillars(canopy)]), mats.carbon, 'aero'),   // aero kit + roof panel + pillars in one draw call
+  const ck = H.carbonKit(), kit = mesh(mergeGeo([ck.main, roofGeo, pillars(canopy)]), mats.carbon, 'aero'),   // aero kit + roof panel + pillars in one draw call
      kitF = mesh(ck.front, mats.carbon, 'aero-front'), kitR = mesh(ck.rear, mats.carbon, 'aero-rear'),   // bumper / diffuser: peel off separately
-     flap = mesh(wingFlap(), mats.carbon, 'wing-flap'); flap.position.set(-2.62, 1.3, 0);
-  const plates = mesh(armour(), mats.gun, 'armour');
-  const cabin = mesh(interior(), mats.interior, 'interior', false), disp = mesh(displays(), mats.display, 'displays', false);
-  const heads = mesh(headLights(), mats.head, 'headlights', false), tails = mesh(tailLights(), mats.tail, 'taillights', false), revs = mesh(reverseLights(), mats.rev, 'reverse', false);
-  const under = mesh(underglow(), mats.under, 'underglow', false), gaps = mesh(mergeGeo([panelGaps(canopy), pillars(canopy)]), mats.gap, 'gaps', false);
-  const inn = internals(), innDark = mesh(inn.dark, mats.dark, 'internals-dark', false), innMetal = mesh(inn.metal, mats.gun, 'internals-metal', true);
+     flap = mesh(H.wingFlap(), mats.carbon, 'wing-flap'); flap.position.set(-2.62, 1.3, 0);
+  const plates = mesh(H.armour(), mats.gun, 'armour');
+  const cabin = mesh(H.interior(), mats.interior, 'interior', false), disp = mesh(H.displays(),mats.display, 'displays', false);
+  const heads = mesh(H.headLights(), mats.head, 'headlights', false), tails = mesh(H.tailLights(),mats.tail, 'taillights', false), revs = mesh(H.reverseLights(), mats.rev, 'reverse', false);
+  const under = mesh(H.underglow(), mats.under, 'underglow', false), gaps = mesh(mergeGeo([H.panelGaps(canopy), pillars(canopy)]), mats.gap, 'gaps', false);
+  const inn = H.internals(), innDark = mesh(inn.dark, mats.dark, 'internals-dark', false), innMetal = mesh(inn.metal, mats.gun, 'internals-metal', true);
   sprung.add(innDark, innMetal, innDark, innMetal, body, hood, glass, kit, kitF, kitR, flap, plates, cabin, disp, heads, tails, revs, under, gaps);
-  gaps.geometry = panelGaps(canopy);
+  gaps.geometry = H.panelGaps(canopy);
   // underglow decal on the ground (unsprung)
   const decal = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 3.4).rotateX(-Math.PI / 2), mats.glowDecal); decal.position.set(0, 0.03, 0); decal.name = 'underglow-decal'; decal.renderOrder = 2; decal.scale.set(V.sx, 1, V.sz); root.add(decal);
   // engine bay + bay fire
@@ -432,7 +438,8 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
   const mkI = (g, m, name, cast) => { const im = new THREE.InstancedMesh(g, m, 4); im.name = name; im.castShadow = cast; im.frustumCulled = false; im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); root.add(im); return im; };
   const iTyre = mkI(wp.tyre, mats.tyre, 'tyres', true), iRim = mkI(wp.rim, mats.rim, 'rims', true), iDisc = mkI(wp.disc, mats.disc, 'discs', false), iCal = mkI(wp.caliper, mats.caliper, 'calipers', false);
   const spikeRig = createSpikeRig({ carId, parent: sprung, wheelParent: root, steelMat: spikeSteel, glowMat: spikeGlow, wheelRim: iRim });
-  const fx = WHEELS.front * V.sx, rx = WHEELS.rear * V.sx, tz = WHEELS.track * V.sz, WR = WHEELS.radius * V.ws;
+  const W = V.shell ? V.shell.wheels : WHEELS;
+  const fx = W.front * V.sx, rx = W.rear * V.sx, tz = W.track * V.sz, WR = WHEELS.radius * V.ws;
   const slots = [[fx, tz, 1, true], [fx, -tz, -1, true], [rx, tz, 1, false], [rx, -tz, -1, false]];
 
   const S = { pitch: 0, pitchV: 0, roll: 0, rollV: 0, heave: 0, heaveV: 0, spin: 0, dentKey: '', stage: 0, turretYaw: 0, turretPitch: 0, flap: 0.2, heat: 0, t: 0, brakeOn: null, charred: false, lost: {}, glassOk: true, cockpit: false };
@@ -440,7 +447,7 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
   const charredCol = new THREE.Color(0x0c0b0a), paintCol = new THREE.Color(color), accentC = new THREE.Color(accent);
 
   // ---- livery: paint preset, accent colour, racing number and decals (baked into one canvas texture read by the paint shader)
-  const frames = zoneFrames();
+  const frames = zoneFrames(V.shell);
   let bodyTex = null, bodyCtx = null, roofTex = null, roofCtx = null, roofDecal = null, decalOn = false, hasRoof = false;
   const tintOf = (id) => (getPaint(id) ? getPaint(id).hex : 0xffffff);
   function bakeDecals(placements, num) {
@@ -465,7 +472,7 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
   function setLivery(l = {}) {
     if (l.paintHex !== undefined) { paintCol.setHex(l.paintHex); if (!S.charred) mats.paint.color.copy(paintCol); }
     const pr = l.paint ? getPaint(l.paint) : null;
-    if (pr) { finish = { ...pr.finish }; if (!S.charred) Object.assign(mats.paint, finish); }
+    if (pr) { finish = { ...pr.finish, ...(V.paintOver || {}) }; if (!S.charred) Object.assign(mats.paint, finish); }
     if (l.accentHex !== undefined) { accentC.setHex(l.accentHex); mats.display.color.copy(accentC).multiplyScalar(2.4); mats.eye.color.copy(accentC).multiplyScalar(4); mats.glowDecal.color.copy(accentC).multiplyScalar(0.8); }
     if (l.decals !== undefined || l.number !== undefined) bakeDecals(l.decals || [], l.number);
   }
@@ -479,7 +486,7 @@ export function buildHeroCarPBR({ color = 0xc8501a, accent = 0x35e6ff, number = 
       const yaw = (front ? steer : 0) + (side < 0 ? Math.PI : 0);
       const y = WR - (look.charred ? 0.07 * V.ws : 0) + S.heave * 0.0;
       const gone = (i === 0 && S.lost.wheelFR) || (i === 3 && S.lost.wheelRL) ? 0 : 1;
-      dummy.position.set(x, y, z); dummy.rotation.set(0, yaw, 0); dummy.scale.set(gone * V.ws, (look.charred ? 0.84 : 1) * gone * V.ws, gone * V.ws);
+      dummy.position.set(x, y, z); dummy.rotation.set(0, yaw, 0); dummy.scale.set(gone * V.ws, (look.charred ? 0.84 : 1) * gone * V.ws, gone * (V.wz ?? V.ws));
       dummy.updateMatrix(); tmp.copy(dummy.matrix);
       iCal.setMatrixAt(i, tmp);                                         // caliper: steers, does not spin
       const spin = (side < 0 ? 1 : -1) * S.spin * locked;

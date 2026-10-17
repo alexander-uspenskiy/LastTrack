@@ -13,6 +13,16 @@ const SLOTS = {
   hammer: { rocket: 8, guided: 4, terminator: 2 },
   wasp: { rocket: 6, guided: 2, terminator: 2 },
   bulwark: { rocket: 8, guided: 4, terminator: 2 },
+  gullwing: { rocket: 6, guided: 2, terminator: 2 },
+  rhino: { rocket: 8, guided: 4, terminator: 2 },
+};
+// where the hardware sits: rocket box (x, y), guided pods (y, z), terminator rail (y, z). The Hammer-family values are the defaults;
+// the classic shells mount on their own decks and racks.
+const ANCHOR = {
+  default: { rocket: [-1.85, 1.2], pods: { y: 1.2, z: 1.0 }, rail: { y: 1.52, z: 0.62 } },
+  bulwark: { rocket: [-1.95, 1.3], pods: { y: 1.2, z: 1.12 }, rail: { y: 1.85, z: 1.0 } },
+  gullwing: { rocket: [-1.72, 1.25], pods: { y: 1.2, z: 0.55 }, rail: { y: 1.5, z: 0.4 } },
+  rhino: { rocket: [-2.0, 1.45], pods: { y: 1.9, z: 0.6 }, rail: { y: 2.1, z: 0.5 } },
 };
 export function hardwareSlots(carId, weaponId) { return ((SLOTS[carId] || SLOTS.hammer)[weaponId]) || 0; }
 /** Pure: how many missiles sit in the tubes for `ammo` rounds left (empty tubes once the ammo is gone). */
@@ -59,11 +69,11 @@ function missileGeo(weaponId) {
  */
 export function buildHardware(carId, weaponId) {
   const n = hardwareSlots(carId, weaponId);
-  const bulk = carId === 'bulwark', hw = [], slots = [];
+  const A = ANCHOR[carId] || ANCHOR.default, hw = [], slots = [];
   const metal = 0x59606a, dark = 0x2c3037, trim = 0x8b939e;
   if (weaponId === 'rocket') {
     const cols = n >= 8 ? 4 : n >= 6 ? 3 : 2, rows = n / cols, pitch = 0.22, tilt = 0.12;
-    const cx = bulk ? -1.95 : -1.85, cy = bulk ? 1.3 : 1.2, w = cols * pitch + 0.1, h = rows * pitch + 0.1, len = 0.7;
+    const [cx, cy] = A.rocket, w = cols * pitch + 0.1, h = rows * pitch + 0.1, len = 0.7;
     const parts = [];
     const box = roundedBox(len, h, w, 0.045, 3); parts.push(paint(box, metal));
     const lid = roundedBox(len * 0.9, 0.025, w * 0.9, 0.01, 1); xf(lid, { pos: [0, h / 2 + 0.005, 0] }); parts.push(paint(lid, trim));
@@ -79,7 +89,7 @@ export function buildHardware(carId, weaponId) {
   } else if (weaponId === 'guided') {
     const per = n / 2, tilt = 0.05, len = 1.05;
     for (const s of [1, -1]) {
-      const cx = -0.95, cy = 1.2, cz = s * (bulk ? 1.12 : 1.0), w = per * 0.2 + 0.06;
+      const cx = -0.95, cy = A.pods.y, cz = s * A.pods.z, w = per * 0.2 + 0.06;
       const parts = [];
       const body = roundedBox(len, 0.24, w, 0.1, 4); parts.push(paint(body, 0x3d424a));
       const spine = roundedBox(len * 0.8, 0.03, w * 0.55, 0.012, 1); xf(spine, { pos: [-0.04, 0.125, 0] }); parts.push(paint(spine, 0x25d8ff));
@@ -94,7 +104,7 @@ export function buildHardware(carId, weaponId) {
       const g = colored(parts); xf(g, { pos: [cx, cy, cz], rot: [0, s * 0.03, tilt] }); hw.push(g);
     }
   } else {
-    const cy = bulk ? 1.85 : 1.52, cx = -1.0, zs = bulk ? 1.0 : 0.62, len = 1.95;
+    const cy = A.rail.y, cx = -1.0, zs = A.rail.z, len = 1.95;
     for (let k = 0; k < n; k++) {
       const z = (k === 0 ? 1 : -1) * zs, parts = [];
       const rail = roundedBox(len, 0.07, 0.2, 0.025, 2); xf(rail, { pos: [0, -0.2, 0] }); parts.push(paint(rail, metal));
