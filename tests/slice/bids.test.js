@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGameConfig } from '../../src/data/sliceConfig.js';
+import { createGameConfig, gridIds } from '../../src/data/sliceConfig.js';
 import { defaultSave } from '../../src/data/saveStore.js';
 import { createRaceSim } from '../../src/sim/raceSim.js';
 
@@ -9,6 +9,17 @@ const FIELD = ['vex', 'fuse', 'kane', 'cinder', 'rust'];   // the racers drawn w
 test('the race runs the field the track was chosen with, in the order drawn', () => {
   const cfg = createGameConfig({ mode: 'race', trackId: 'neonloop', save: defaultSave(), seed: 3, field: FIELD });
   assert.deepEqual(cfg.rivals.map((r) => r.driverId), FIELD);
+});
+
+test('the grid a bid names is the grid the race runs: practice without rivals has none', () => {
+  assert.deepEqual(gridIds({ mode: 'race', field: FIELD }), FIELD);
+  assert.deepEqual(gridIds({ mode: 'practice', practiceRivals: true, field: FIELD }), FIELD);
+  assert.deepEqual(gridIds({ mode: 'practice', field: FIELD }), []);
+  assert.deepEqual(gridIds({ mode: 'race', field: null }), []);
+  for (const setup of [{ mode: 'race', field: FIELD }, { mode: 'practice', practiceRivals: true, field: FIELD }, { mode: 'practice', field: FIELD }]) {
+    const raced = createGameConfig({ ...setup, trackId: 'neonloop', save: defaultSave(), seed: 3 }).rivals.map((r) => r.driverId);
+    assert.deepEqual(raced, gridIds(setup), setup.mode);
+  }
 });
 
 test('a wreck the player is credited with names that racer in the result', () => {

@@ -4,6 +4,7 @@ import { bidSummary, racerNames } from '../../src/ui/screens/raceSettings.js';
 import { createFlowMachine } from '../../src/ui/flowMachine.js';
 import { defaultSave } from '../../src/data/saveStore.js';
 import { offersFor } from '../../src/data/contracts.js';
+import { gridIds } from '../../src/data/sliceConfig.js';
 
 const FIELD = ['vex', 'fuse', 'kane', 'cinder', 'rust'];   // the racers on the grid of the track just chosen
 const race = { mode: 'race', bid: 'military', field: FIELD };
@@ -14,8 +15,17 @@ test('bid line: none, race with a bid naming racers on the grid, practice with a
   assert.equal(named.length, 2);
   assert.equal(bidSummary({ mode: 'race', bid: null, field: FIELD }, save), 'No bid: prize and kill bonus only.');
   assert.equal(bidSummary(race, save), `Federal Motor Corps: wreck ${racerNames(named)} for +$2,000, or −$300 if you miss.`);
-  assert.match(bidSummary({ mode: 'practice', bid: 'mafia', field: FIELD }, save), /Practice ignores bids, so this one is not taken\.$/);
+  assert.match(bidSummary({ mode: 'practice', bid: 'mafia', practiceRivals: true, field: FIELD }, save), /Practice ignores bids, so this one is not taken\.$/);
   assert.match(bidSummary(race, { ...save, contract: { patron: 'mafia', quota: 1, targets: ['vex'] } }), /already running/);
+});
+
+test('a bid names only racers on this race\'s grid: practice without rivals has none, so it names no one', () => {
+  const save = { ...defaultSave(), races: 1 };
+  assert.equal(bidSummary({ mode: 'practice', bid: 'mafia', field: FIELD }, save), 'Practice without rivals: nobody on the grid to wreck, so no bid is named.');
+  for (const setup of [race, { mode: 'practice', bid: 'mafia', practiceRivals: true, field: FIELD }]) {
+    const named = offersFor(save, gridIds(setup)).find((o) => o.patron === setup.bid)?.targets || [];
+    assert.ok(named.length && named.every((id) => gridIds(setup).includes(id)));
+  }
 });
 
 test('no track, no bid: a bid is never taken before the chosen track has racers', () => {

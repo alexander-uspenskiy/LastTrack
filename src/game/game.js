@@ -8,7 +8,7 @@ import { getTrack } from '../data/tracks/index.js';
 import { getDriver } from '../data/drivers.js';
 import { getWeapon } from '../data/weapons.js';
 import * as economy from '../data/economy.js';
-import { createGameConfig, pickField, SLICE_TRACK_ID } from '../data/sliceConfig.js';
+import { createGameConfig, gridIds, pickField, SLICE_TRACK_ID } from '../data/sliceConfig.js';
 import { playerLivery } from '../data/liveries.js';
 import { createPaintScreen } from '../ui/screens/paint.js';
 import { createRaceSim } from '../sim/raceSim.js';
@@ -156,7 +156,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
     },
     /** acceptContract(patronId) -> {ok, error?}: lock in a board bid for the chosen track's racers; it settles after the race. */
     acceptContract(patronId) {
-      const r = economy.acceptContract(saveData, patronId, raceSetup.field || []);
+      const r = economy.acceptContract(saveData, patronId, gridIds(raceSetup));
       if (!r.ok) return { ok: false, error: ERRORS[r.error] || r.error };
       commit(r.save);
       bus.emit('contract:accepted', { patron: r.save.contract.patron, quota: r.save.contract.quota });

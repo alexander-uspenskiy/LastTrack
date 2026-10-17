@@ -33,13 +33,24 @@ const LIVERY_POOL = [12, 11, 2, 8, 14, 13, 5, 4, 10, 3, 9, 15, 1, 6];
 export function pickField(seed, n = FIELD_ENEMIES) { return pickDrivers(seed, n); }
 
 /**
+ * Pure: the driver ids that actually race in this setup, in grid order. Race mode: the field drawn with the track.
+ * Practice: that same field only when rivals are on, otherwise nobody. Bids name racers only from this list.
+ */
+export function gridIds({ mode = 'race', practiceRivals = false, field = null } = {}) {
+  if (mode === 'practice' && !practiceRivals) return [];
+  return field && field.length ? [...field] : [];
+}
+
+/**
  * createGameConfig({ mode, trackId, laps, save, seed, practiceRivals, field }) -> RaceConfig with `hero`/`heroStyle` set:
  * the player's car from the save + 5 enemies (each driver keeps their own car, weapons, skill and aggression), distinct liveries.
  * `field` = the driver ids drawn when the track was chosen (the racers the bids name); without one, the seed draws it.
  */
 export function createGameConfig({ mode = 'race', trackId = SLICE_TRACK_ID, laps, save, seed, practiceRivals = false, field = null } = {}) {
   const practice = mode === 'practice';
-  const ids = practice && !practiceRivals ? [] : field && field.length ? [...field] : pickDrivers(seed ?? 1, FIELD_ENEMIES);
+  const onGrid = gridIds({ mode, practiceRivals, field });
+  // no field drawn (a debug skip): the seed draws one, but practice without rivals has nobody on the grid
+  const ids = practice && !practiceRivals ? [] : onGrid.length ? onGrid : pickDrivers(seed ?? 1, FIELD_ENEMIES);
   const cfg = createRaceConfig({ mode, trackId, laps, save, seed, rivalIds: ids });
   const colors = assignLiveries(cfg.rivals.map((r) => r.color), cfg.player.color, LIVERY_POOL);
   const pl = playerLivery(save || {});

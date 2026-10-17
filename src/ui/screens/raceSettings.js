@@ -1,6 +1,7 @@
 import { h, button, screenHeader, fmtMoney, attachMenuKeys, clear } from '../dom.js';
 import { getTrack, GAME_TRACKS as TRACKS } from '../../data/tracks/index.js';
 import { offersFor, getPatron } from '../../data/contracts.js';
+import { gridIds } from '../../data/sliceConfig.js';
 import { getDriver } from '../../data/drivers.js';
 import { icon } from '../icons.js';
 import { outlineSvg, diffPips } from './trackSelect.js';
@@ -10,13 +11,15 @@ import { difficultyOf, difficultyLabel } from '../menuLogic.js';
 export const racerNames = (ids = []) => ids.map((id) => getDriver(id)?.name ?? id).join(' & ');
 
 /**
- * Pure: what the chosen bid will do when the race starts, as one line. The bid names racers on this track's grid.
+ * Pure: what the chosen bid will do when the race starts, as one line. The bid names racers on this race's grid (gridIds).
  * Race mode takes it at the start; practice ignores it; a contract already running keeps its place.
  */
 export function bidSummary(setup, save) {
   if (save.contract) return 'A contract is already running. It settles after this race.';
   if (!setup.bid) return 'No bid: prize and kill bonus only.';
-  const o = offersFor(save, setup.field || []).find((x) => x.patron === setup.bid), p = getPatron(setup.bid);
+  const grid = gridIds(setup);
+  if (!grid.length && setup.mode === 'practice') return 'Practice without rivals: nobody on the grid to wreck, so no bid is named.';
+  const o = offersFor(save, grid).find((x) => x.patron === setup.bid), p = getPatron(setup.bid);
   if (!o || !p) return 'No bid: prize and kill bonus only.';
   const tail = setup.mode === 'race' ? '' : ' Practice ignores bids, so this one is not taken.';
   return `${p.org}: wreck ${racerNames(o.targets)} for +${fmtMoney(o.bounty)}, or −${fmtMoney(o.penalty)} if you miss.${tail}`;
@@ -83,9 +86,10 @@ export function createRaceSettingsScreen({ game, flow }) {
   }
 
   function renderBid() {
-    const s = setup(), sv = game.getSave(), t = getTrack(s.trackId), open = sv.contract, field = s.field || [];
+    const s = setup(), sv = game.getSave(), t = getTrack(s.trackId), open = sv.contract, field = s.field || [], grid = gridIds(s);
     boardTrack.textContent = `${t.name} · ${t.city}`;
-    gridLine.textContent = field.length ? `On this grid: ${racerNames(field)}.` : 'Pick a track to see who is on its grid.';
+    gridLine.textContent = !field.length ? 'Pick a track to see who is on its grid.'
+      : grid.length ? `On this grid: ${racerNames(grid)}.` : 'Practice without rivals: nobody on this grid to wreck.';
     running.classList.toggle('hidden', !open);
     if (open) {
       const p = getPatron(open.patron);
@@ -93,7 +97,7 @@ export function createRaceSettingsScreen({ game, flow }) {
         h('p', h('b', p.name), ` · ${p.org}`, h('br'), h('span.muted', `Wreck ${racerNames(open.targets || [])} in this race. It settles when the race ends.`)));
     }
     clear(bidGrid);
-    for (const o of offersFor(sv, field)) {
+    for (const o of offersFor(sv, grid)) {
       const p = getPatron(o.patron);
       const mine = !!open && open.patron === p.id;
       const chosen = s.bid === p.id;
