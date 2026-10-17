@@ -1,5 +1,5 @@
 // Pure flow state machine (no DOM). ARCHITECTURE.md §7.
-export const STATES = ['title', 'carSelect', 'garage', 'shop', 'paint', 'roster', 'trackSelect', 'raceSettings', 'loading', 'race', 'paused', 'results'];
+export const STATES = ['title', 'carSelect', 'garage', 'shop', 'paint', 'roster', 'trackSelect', 'raceSettings', 'loading', 'race', 'paused', 'results', 'win', 'finalStats'];
 
 export const TRANSITIONS = {
   title: ['carSelect', 'garage'],
@@ -11,10 +11,15 @@ export const TRANSITIONS = {
   trackSelect: ['raceSettings', 'garage'],
   raceSettings: ['loading', 'trackSelect', 'garage'],
   loading: ['race', 'garage'],
-  race: ['paused', 'results'],
+  race: ['paused', 'results', 'win'],
   paused: ['race', 'loading', 'garage'],
   results: ['garage'],
+  win: ['finalStats'],          // the winning lap; passing every track ends the race here instead of on the results
+  finalStats: ['garage'],
 };
+
+/** The state a finished race goes to: the win screen when it completed the last track pass, the results otherwise. */
+export function raceEndState(won) { return won ? 'win' : 'results'; }
 
 export function createFlowMachine({ initial = 'title', params: initialParams = {} } = {}) {
   if (!STATES.includes(initial)) throw new Error(`flowMachine: unknown initial state "${initial}"`);

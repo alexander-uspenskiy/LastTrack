@@ -36,6 +36,9 @@ export function defaultSave() {
     kills: 0,
     bestTimes: {},
     passedTracks: [],   // tracks passed: a top-three finish without a wreck (any track can be raced; passing is the record)
+    // career earnings (v0.10.3) for the final score: prize money, kill bonuses, and the net of settled contracts
+    earned: { prize: 0, killBonus: 0, contractNet: 0 },
+    winShown: false,   // the win (passing every track) has been celebrated on this save: the winning lap plays once
     // livery (v0.3): null paint/accent = the car's stock colours; decalsOwned = bought decal ids; decals = placed (max 6)
     paint: null,
     accent: null,
@@ -93,6 +96,9 @@ export function normalizeSave(input) {
     }
   }
   if (Array.isArray(input.passedTracks)) d.passedTracks = ALL_TRACKS.map((t) => t.id).filter((id) => input.passedTracks.includes(id));
+  // career earnings: older saves have none (they start at zero); a contract's net can be negative
+  if (isObj(input.earned)) d.earned = { prize: Math.max(0, num(input.earned.prize, 0)), killBonus: Math.max(0, num(input.earned.killBonus, 0)), contractNet: num(input.earned.contractNet, 0) };
+  d.winShown = input.winShown === true;
   // livery migration: older saves have none of these fields -> stock paint, no decals
   if (getPaint(input.paint)) d.paint = input.paint;
   if (getAccent(input.accent)) d.accent = input.accent;

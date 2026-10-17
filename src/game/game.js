@@ -10,17 +10,19 @@ import { getWeapon } from '../data/weapons.js';
 import * as economy from '../data/economy.js';
 import { createGameConfig, gridIds, pickField, SLICE_TRACK_ID } from '../data/sliceConfig.js';
 import { playerLivery } from '../data/liveries.js';
+import { winDue, WIN_TRACK_IDS } from '../data/career.js';
 import { createPaintScreen } from '../ui/screens/paint.js';
 import { createRaceSim } from '../sim/raceSim.js';
 import { createRenderHost } from '../render/renderHost.js';
 import { createRaceController } from '../render/raceController.js';
+import { createVictoryLap } from '../render/victoryLap.js';
 import { createCarPreview } from '../render/carPreview.js';
 import { createMinimap } from '../render/minimap.js';
 import { createMenuScene } from '../render/menuScene.js';
 import { createAudioEngine } from '../audio/audioEngine.js';
 import { attachPBR } from '../render/pbr/pbrHost.js';
 import { readQuality, nextQuality } from '../render/pbr/quality.js';
-import { createFlowMachine } from '../ui/flowMachine.js';
+import { createFlowMachine, raceEndState } from '../ui/flowMachine.js';
 import { createInput } from '../ui/input.js';
 import { createTouchControls } from '../ui/touchControls.js';
 import { createHud } from '../ui/hud.js';
@@ -39,6 +41,8 @@ import { createRaceSettingsScreen } from '../ui/screens/raceSettings.js';
 import { createLoadingScreen } from '../ui/screens/loading.js';
 import { createPauseScreen } from '../ui/screens/pause.js';
 import { createResultsScreen } from '../ui/screens/results.js';
+import { createWinScreen } from '../ui/screens/win.js';
+import { createFinalStatsScreen } from '../ui/screens/finalStats.js';
 import { createSettingsSheet } from '../ui/screens/settingsSheet.js';
 import { loadSettings, saveSettings, normalizeSettings } from '../ui/settings.js';
 
@@ -56,6 +60,7 @@ const ERRORS = {
 };
 const inRaceState = (s) => s === 'race' || s === 'paused';
 const MENU_3D = new Set(['title', 'carSelect', 'garage', 'shop', 'paint']);   // states drawn over the live 3D showroom
+const VICTORY_STATES = new Set(['win', 'finalStats']);   // the winning lap plays behind both (passing every track)
 
 /** Wrap an optional subsystem so that a bug in it never breaks the game. */
 function safe(obj, onError) {
@@ -108,6 +113,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
   let sim = null, controller = null, track = null, config = null;
   let snapA = null, snapB = null, acc = 0, endTimer = 0, wreckTimer = 0, finalized = false;
   let lastResult = null;
+  let victoryCtx = null, victory = null;   // the win's track, the race's final snapshot (the lap's car), and the running lap
   let rafId = 0, lastT = 0, disposed = false, muted = false;
   const perf = { fps: 60, frameMs: 16, sum: 0, n: 0 };
   let firstFrameResolve; const firstFrame = new Promise((r) => { firstFrameResolve = r; });
@@ -125,6 +131,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
     get pbr() { return pbr; },
     get stage() { return stage; },
     get settings() { return settings; },
+    get victory() { return victory; },   // the running winning lap (null outside the win and final stats screens)
   };
 
   // ---------- save helpers ----------
@@ -251,7 +258,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
     title: createTitleScreen(ctx), carSelect: createCarSelectScreen(ctx), garage: createGarageScreen(ctx),
     shop: createShopScreen(ctx), roster: createRosterScreen(ctx), trackSelect: createTrackSelectScreen(ctx),
     raceSettings: createRaceSettingsScreen(ctx), loading: createLoadingScreen(ctx), paused: createPauseScreen(ctx),
-    results: createResultsScreen(ctx), paint: createPaintScreen(ctx),
+    results: createResultsScreen(ctx), win: createWinScreen(ctx), finalStats: createFinalStatsScreen(ctx), paint: createPaintScreen(ctx),
   };
   for (const s of Object.values(screens)) { s.el.classList.add('hidden'); root.append(s.el); }
   let shown = null;
@@ -319,11 +326,28 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
     };
     const pickupCash = config.mode === 'race' ? Math.max(0, Math.round(p.pickupCash || 0)) : 0;
     summary.pickupCash = pickupCash;
-    if (config.mode === 'race') commit({ ...contract.save, cash: contract.save.cash + pickupCash });
+    // the race that wins the career goes to the winning lap instead of the results: every track passed, once per save
+    const won = config.mode === 'race' && winDue(before, contract.save.passedTracks, WIN_TRACK_IDS);
+    if (config.mode === 'race') commit({ ...contract.save, cash: contract.save.cash + pickupCash, winShown: contract.save.winShown || won });
     if (contract.settled) bus.emit('contract:settled', contract.settled);
     lastResult = { result, summary };
+    if (won) victoryCtx = { track, template: sim.snapshot(), carId: config.player?.carId || saveData.carId, seed: config.seed };
     bus.emit('race:finished', lastResult);
-    if (!flow.transition('results', lastResult)) flow.force('results', lastResult);
+    const to = raceEndState(won), params = won ? { ...lastResult, won } : lastResult;
+    if (!flow.transition(to, params)) flow.force(to, params);
+  }
+
+  // ---------- winning lap (win and final stats screens): the player's car drives the track by itself, TV camera, fireworks ----------
+  function startVictory() {
+    disposeVictory();
+    if (!host || !victoryCtx) return;
+    try { victory = safe(createVictoryLap(host, victoryCtx.track, victoryCtx.template, { carId: victoryCtx.carId, seed: victoryCtx.seed }), reportError); }
+    catch (e) { reportError(e); victory = null; }
+    try { host.resize(canvas.clientWidth || window.innerWidth, canvas.clientHeight || window.innerHeight); } catch (e) { reportError(e); }
+  }
+  function disposeVictory() {
+    try { victory?.dispose(); } catch (e) { reportError(e); }
+    victory = null;
   }
 
   function pause() { if (flow.state !== 'race') return false; return flow.transition('paused'); }
@@ -347,13 +371,17 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
   // ---------- flow wiring ----------
   const sceneFor = (to, params) => (to === 'race' || to === 'paused' ? 'race'
     : to === 'results' ? (params?.summary && !params.summary.wrecked && (params.summary.mode === 'practice' || params.summary.position <= 3) ? 'win' : 'lose')
-      : to === 'loading' ? null : 'menu');
+      : VICTORY_STATES.has(to) ? 'win' : to === 'loading' ? null : 'menu');
   flow.onChange((from, to, params) => {
     try {
       bus.emit('flow:state', { from, to, params });
       touch.setVisible(to === 'race');
       if (to === 'race') { input.clear(); hud.show(); audio?.resume(); } else if (to !== 'paused') hud.hide();
       if (inRaceState(from) && !inRaceState(to)) disposeRace();
+      const victoryOn = VICTORY_STATES.has(to);
+      if (VICTORY_STATES.has(from) && !victoryOn) disposeVictory();
+      // the lap is built after two frames, so the win screen paints first (as the loading screen does)
+      if (victoryOn && !VICTORY_STATES.has(from)) requestAnimationFrame(() => requestAnimationFrame(() => { if (VICTORY_STATES.has(flow.state) && !victory) startVictory(); }));
       { const sc = sceneFor(to, params); if (sc) audio?.setScene(sc); }
       if (to === 'loading') {
         // leave two frames so the loading screen paints, then build the race
@@ -364,10 +392,11 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
       }
       const menu3d = !!stage && MENU_3D.has(to);
       if (stage) { if (menu3d) { setEnv('showroom'); stage.show(); } else stage.hide(); }
-      if (to === 'loading' || inRaceState(to)) setEnv(raceEnv());
+      if (to === 'loading' || inRaceState(to) || victoryOn) setEnv(raceEnv());
       if (to === 'title') document.body.classList.remove('racing');
       document.body.classList.toggle('racing', inRaceState(to));
       document.body.classList.toggle('scene3d', menu3d);
+      document.body.classList.toggle('victory', victoryOn);
       showScreen(to, params);
     } catch (e) { reportError(e); }
   });
@@ -414,6 +443,8 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
         hud.setNote?.(`SPECTATING — RESULTS IN ${Math.max(0, Math.ceil(WRECK_SPECTATE - wreckTimer))}`);
         if (wreckTimer >= WRECK_SPECTATE) finishRace();
       } else hud.setNote?.('');
+    } else if (victory && VICTORY_STATES.has(st)) {
+      victory.update(dt); host?.render();
     } else if (stage && stage.shown && MENU_3D.has(st)) {
       try { stage.update(dt); host.render(); } catch (e) { reportError(e); }
     } else if (st === 'paused' && controller) {
@@ -458,7 +489,7 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
       cancelAnimationFrame(rafId);
       cleanups.forEach((c) => c());
       input.dispose(); touch.dispose();
-      disposeRace(); hud.dispose(); sheet.dispose(); try { stage?.dispose(); } catch { /* ignore */ }
+      disposeRace(); disposeVictory(); hud.dispose(); sheet.dispose(); try { stage?.dispose(); } catch { /* ignore */ }
       audio?.dispose();
       try { host?.dispose(); } catch { /* ignore */ }
     },

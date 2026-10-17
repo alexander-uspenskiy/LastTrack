@@ -135,6 +135,7 @@ export function applyRaceResult(save, result, { mode = 'race', nCars = result?.f
     kills: save.kills + (p.kills || 0),
     bestTimes: best,
     passedTracks: passed,
+    earned: { ...earnedOf(save), prize: earnedOf(save).prize + prize, killBonus: earnedOf(save).killBonus + bonus },
   };
   return { save: out, prize, killBonus: bonus, total: prize + bonus, passedTrack };
 }
@@ -164,7 +165,14 @@ export function settleContract(save, { mode = 'race', wrecked = [] } = {}) {
   const bounty = complete ? targets.length * p.perKill : 0;
   const penalty = complete ? 0 : Math.min(p.penalty, save.cash);
   const settled = { patron: p.id, org: p.org, quota: targets.length, targets, hit, complete, bounty, penalty, net: bounty - penalty };
-  return { save: { ...save, cash: save.cash + bounty - penalty, contract: null }, settled };
+  const earned = earnedOf(save);
+  return { save: { ...save, cash: save.cash + bounty - penalty, contract: null, earned: { ...earned, contractNet: earned.contractNet + settled.net } }, settled };
+}
+
+/** Career racing earnings (the final score is built from these): prize money, kill bonuses, and the net of settled contracts. */
+export function earnedOf(save) {
+  const e = save && save.earned;
+  return { prize: e?.prize || 0, killBonus: e?.killBonus || 0, contractNet: e?.contractNet || 0 };
 }
 
 // ---------------------------------------------------------------- paint & decals (cosmetic; money only for buying decals)
