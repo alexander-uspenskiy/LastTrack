@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createGameConfig, gridIds } from '../../src/data/sliceConfig.js';
+import { createGameConfig, fieldKeeping, gridIds } from '../../src/data/sliceConfig.js';
+import { DRIVERS } from '../../src/data/drivers.js';
 import { defaultSave } from '../../src/data/saveStore.js';
 import { createRaceSim } from '../../src/sim/raceSim.js';
 
@@ -9,6 +10,19 @@ const FIELD = ['vex', 'fuse', 'kane', 'cinder', 'rust'];   // the racers drawn w
 test('the race runs the field the track was chosen with, in the order drawn', () => {
   const cfg = createGameConfig({ mode: 'race', trackId: 'neonloop', save: defaultSave(), seed: 3, field: FIELD });
   assert.deepEqual(cfg.rivals.map((r) => r.driverId), FIELD);
+});
+
+test('a running contract keeps its named racers on the grid it settles in', () => {
+  const all = DRIVERS.map((d) => d.id);
+  const drawn = all.slice(0, 5), named = all.slice(9, 11);   // the named two are not in the drawn field
+  const kept = fieldKeeping(drawn, { targets: named });
+  assert.equal(kept.length, drawn.length);
+  assert.equal(new Set(kept).size, kept.length, 'no racer twice');
+  for (const id of named) assert.ok(kept.includes(id), id);
+  assert.deepEqual(fieldKeeping(drawn, null), drawn, 'no contract: the draw stays as it is');
+  assert.deepEqual(fieldKeeping(drawn, { targets: [drawn[1]] }), drawn, 'a named racer already drawn keeps its place');
+  const raced = createGameConfig({ mode: 'race', trackId: 'neonloop', save: defaultSave(), seed: 5, field: kept }).rivals.map((r) => r.driverId);
+  assert.deepEqual(raced, kept, 'the race runs the kept field');
 });
 
 test('the grid a bid names is the grid the race runs: practice without rivals has none', () => {

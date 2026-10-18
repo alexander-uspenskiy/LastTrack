@@ -100,6 +100,8 @@ export function createRaceSettingsScreen({ game, flow }) {
     for (const o of offersFor(sv, grid)) {
       const p = getPatron(o.patron);
       const mine = !!open && open.patron === p.id;
+      // a running contract shows the racers it was accepted for, not this grid's draw
+      const named = mine ? open.targets || [] : o.targets;
       const chosen = s.bid === p.id;
       // picking the chosen bid again clears it, the same as declining
       const accept = button(mine ? 'RUNNING' : chosen ? 'ACCEPTED' : 'ACCEPT', () => { game.setRaceSetup({ bid: chosen ? null : p.id }); render(); },
@@ -109,8 +111,8 @@ export function createRaceSettingsScreen({ game, flow }) {
         h('div.contract-head', icon(p.icon, { size: 26 }), h('div', h('h3', p.name), h('p.small.muted', p.org))),
         h('p.contract-line', `“${p.line}”`),
         h('div.contract-terms',
-          h('div.term', h('span.small.muted', 'WRECK'), h('b', racerNames(o.targets))),
-          h('div.term', h('span.small.muted', 'ON THE FLAG'), h('b.good', '+' + fmtMoney(o.bounty))),
+          h('div.term', h('span.small.muted', 'WRECK'), h('b', racerNames(named))),
+          h('div.term', h('span.small.muted', 'ON THE FLAG'), h('b.good', '+' + fmtMoney(named.length * p.perKill))),
           h('div.term', h('span.small.muted', 'IF YOU MISS'), h('b.bad', '−' + fmtMoney(o.penalty)))),
         accept));
     }

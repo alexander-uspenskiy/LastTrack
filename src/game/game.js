@@ -8,7 +8,7 @@ import { getTrack } from '../data/tracks/index.js';
 import { getDriver } from '../data/drivers.js';
 import { getWeapon } from '../data/weapons.js';
 import * as economy from '../data/economy.js';
-import { createGameConfig, gridIds, pickField, SLICE_TRACK_ID } from '../data/sliceConfig.js';
+import { createGameConfig, fieldKeeping, gridIds, pickField, SLICE_TRACK_ID } from '../data/sliceConfig.js';
 import { playerLivery } from '../data/liveries.js';
 import { winDue, WIN_TRACK_IDS } from '../data/career.js';
 import { createPaintScreen } from '../ui/screens/paint.js';
@@ -181,8 +181,9 @@ export function createGame({ root, canvas, storage, onError = () => {}, quality 
     liveryOf: (carId) => playerLivery(carId ? { ...saveData, carId } : saveData),
     getRaceSetup: () => raceSetup,
     setRaceSetup(p) { raceSetup = { ...raceSetup, ...p }; bus.emit('race:setup', raceSetup); return raceSetup; },
-    /** Choosing a track starts a fresh race setup: its racers are drawn now (the bids name them) and any bid taken on another race is dropped. */
-    selectTrack(trackId) { return game.setRaceSetup({ trackId, bid: null, field: pickField(rollSeed()) }); },
+    /** Choosing a track starts a fresh race setup: its racers are drawn now (the bids name them) and any bid taken on another race is dropped.
+     *  A contract still running keeps its named racers on this grid, so it can settle. */
+    selectTrack(trackId) { return game.setRaceSetup({ trackId, bid: null, field: fieldKeeping(pickField(rollSeed()), saveData.contract) }); },
     driverName: (r) => (r.isPlayer ? 'YOU (the rookie)' : getDriver(r.driverId)?.name ?? `Car ${r.carId}`),
     createPreview(c) {
       try { return createCarPreview(c); } catch (e) { reportError(e); return null; }

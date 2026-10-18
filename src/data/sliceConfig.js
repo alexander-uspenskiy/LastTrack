@@ -42,6 +42,20 @@ export function gridIds({ mode = 'race', practiceRivals = false, field = null } 
 }
 
 /**
+ * Pure: the drawn field with a running contract's named racers put on the grid, in the drawn order. A contract that is
+ * still open (accepted, not yet settled) can only settle if its racers race, so they replace drawn racers from the back.
+ */
+export function fieldKeeping(drawn = [], contract = null) {
+  const named = (contract?.targets || []).filter((id) => getDriver(id));
+  const missing = named.filter((id) => !drawn.includes(id));
+  const out = [...drawn];
+  for (let i = out.length - 1; i >= 0 && missing.length; i--) {
+    if (!named.includes(out[i])) out[i] = missing.shift();
+  }
+  return out;
+}
+
+/**
  * createGameConfig({ mode, trackId, laps, save, seed, practiceRivals, field }) -> RaceConfig with `hero`/`heroStyle` set:
  * the player's car from the save + 5 enemies (each driver keeps their own car, weapons, skill and aggression), distinct liveries.
  * `field` = the driver ids drawn when the track was chosen (the racers the bids name); without one, the seed draws it.
